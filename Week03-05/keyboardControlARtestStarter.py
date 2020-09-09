@@ -18,7 +18,7 @@ class Keyboard:
         self.signal_stop = False 
         
         # feel free to change the speed, or add keys to do so
-        self.wheel_vel_forward = 100
+        self.wheel_vel_forward = 50
         self.wheel_vel_rotation = 20
 
         # connection to PenguinPi robot
@@ -44,11 +44,11 @@ class Keyboard:
         # adding 'B' key for boost functionality
         # can be toggled on and off
         elif str(key) == "'b'":
-            if (self.wheel_vel_forward == 100):
-                self.wheel_vel_forward = 150
+            if (self.wheel_vel_forward == 50):
+                self.wheel_vel_forward = 60
                 self.wheel_vel_rotation = 30
             else:
-                self.wheel_vel_forward = 100
+                self.wheel_vel_forward = 50
                 self.wheel_vel_rotation = 20
 
         # space key for stopping the bot
