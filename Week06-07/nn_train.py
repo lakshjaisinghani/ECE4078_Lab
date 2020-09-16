@@ -21,7 +21,13 @@ class Train:
     def __init__(self):
         self.net_dict = NNState('train')
         # Data Augmentation operations
-        img_transforms = transforms.Compose(
+        img_transforms_1 = transforms.Compose(
+            [transforms.RandomResizedCrop((64, 64), scale=(0.7, 1.0)),
+            transforms.ToTensor(),
+             transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                  std=[0.229, 0.224, 0.225])])
+
+        img_transforms_2 = transforms.Compose(
             [transforms.RandomRotation((-30, 30)),
              transforms.RandomResizedCrop((64, 64), scale=(0.7, 1.0)),
              transforms.ColorJitter(brightness=0.4, contrast=0.3,
@@ -30,55 +36,85 @@ class Train:
              transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                   std=[0.229, 0.224, 0.225])])
 
-        self.train_data = datasets.ImageFolder('./dataset_segmented/train',
-                                               transform=img_transforms)
-        print(self.train_data.class_to_idx)
+        self.train_data_1 = datasets.ImageFolder('./dataset_segmented/train',
+                                               transform=img_transforms_1)
+        self.train_data_2 = datasets.ImageFolder('./dataset_segmented/train',
+                                               transform=img_transforms_2)
+        self.train_data_3 = datasets.ImageFolder('./dataset_seg_ext/train',
+                                               transform=img_transforms_1)
+        self.train_data_4 = datasets.ImageFolder('./dataset_seg_ext/train',
+                                               transform=img_transforms_2)
+                                               
+        print(self.train_data_1.class_to_idx)
         self.eval_data = datasets.ImageFolder('./dataset_segmented/eval',
-                                              transform=img_transforms)
+                                              transform=img_transforms_2)
 
     def train(self):
-        train_loader = DataLoader(dataset=self.train_data,
+        train_loader_1 = DataLoader(dataset=self.train_data_1,
                                   batch_size=self.net_dict.batch_size,
-                                  shuffle=True, num_workers=4,
+                                  shuffle=True, num_workers=1,
                                   drop_last=True)
-        n_batch = len(train_loader)
-        for epoch_idx in range(self.net_dict.last_epoch + 1,
-                               self.net_dict.n_epochs):
-            train_loss_buff = torch.Tensor()
-            train_loss_buff = self.net_dict.to_device(train_loss_buff)
-            print('\nEpoch [%d/%d]:' % (epoch_idx, self.net_dict.n_epochs))
-            t_start = time.time()
-            # update the network
-            for i, batch in enumerate(train_loader):
-                self.net_dict.optimiser.zero_grad()
-                inputs, labels = batch[0], batch[1]
-                inputs = self.net_dict.to_device(inputs)
-                labels = self.net_dict.to_device(labels)
-                # Forward
-                labels_hat = self.net_dict.net.forward(inputs)
-                loss = self.net_dict.criterion(labels_hat, labels)
-                # Backward
-                loss.backward()
-                # Optimise
-                self.net_dict.optimiser.step()
-                train_loss_buff = torch.cat((train_loss_buff,
-                                             loss.reshape(1, 1)), 0)
-                if (i + 1) % 10 == 0:
-                    print('[%d/%d], Itr [%d/%d], Loss: %.4f'
-                          % (epoch_idx, self.net_dict.n_epochs, i,
-                             n_batch, loss.item()))
-            # current_lr = self.optimiser.param_groups[0]['lr']
-            self.net_dict.lr_scheduler.step()
-            avg_train_loss = torch.mean(train_loss_buff)
-            print('=> Average training loss: %.4f' % avg_train_loss)
-            print('Training Duration: %.3fs' % (time.time() - t_start))
-            if (epoch_idx+1) % 1 == 0:
-                eval_loss_mean = self.eval()
-                # Save model, and best model if qualified
-                delta_acc = self.net_dict.best_acc - eval_loss_mean
-                if delta_acc > 0:
-                    self.net_dict.best_acc = eval_loss_mean
-                self.net_dict.save_ckpt(epoch_idx, delta_acc)
+        train_loader_2 = DataLoader(dataset=self.train_data_2,
+                                  batch_size=self.net_dict.batch_size,
+                                  shuffle=True, num_workers=1,
+                                  drop_last=True)
+        
+        train_loader_3 = DataLoader(dataset=self.train_data_3,
+                                  batch_size=self.net_dict.batch_size,
+                                  shuffle=True, num_workers=1,
+                                  drop_last=True)
+
+        train_loader_4 = DataLoader(dataset=self.train_data_4,
+                                  batch_size=self.net_dict.batch_size,
+                                  shuffle=True, num_workers=1,
+                                  drop_last=True)
+
+        n_batch = len(train_loader_1)
+
+        loaders = [train_loader_1, train_loader_2, train_loader_3, train_loader_4]
+        y = 0
+        for train_loader in loaders:
+            
+            y = y+1
+            print("Loader: " + str(y))
+
+            for epoch_idx in range(self.net_dict.last_epoch + 1, self.net_dict.n_epochs):
+                train_loss_buff = torch.Tensor()
+                train_loss_buff = self.net_dict.to_device(train_loss_buff)
+                print('\nEpoch [%d/%d]:' % (epoch_idx, self.net_dict.n_epochs))
+                t_start = time.time()
+                # update the network
+
+                for i, batch in enumerate(train_loader):
+                    self.net_dict.optimiser.zero_grad()
+                    inputs, labels = batch[0], batch[1]
+                    inputs = self.net_dict.to_device(inputs)
+                    labels = self.net_dict.to_device(labels)
+                    # Forward
+                    labels_hat = self.net_dict.net.forward(inputs)
+                    loss = self.net_dict.criterion(labels_hat, labels)
+                    # Backward
+                    loss.backward()
+                    # Optimise
+                    self.net_dict.optimiser.step()
+                    train_loss_buff = torch.cat((train_loss_buff,
+                                                loss.reshape(1, 1)), 0)
+                    if (i + 1) % 10 == 0:
+                        print('[%d/%d], Itr [%d/%d], Loss: %.4f'
+                            % (epoch_idx, self.net_dict.n_epochs, i,
+                                n_batch, loss.item()))
+                # current_lr = self.optimiser.param_groups[0]['lr']
+                self.net_dict.lr_scheduler.step()
+                avg_train_loss = torch.mean(train_loss_buff)
+                print('=> Average training loss: %.4f' % avg_train_loss)
+                print('Training Duration: %.3fs' % (time.time() - t_start))
+                if (epoch_idx+1) % 1 == 0:
+                    eval_loss_mean = self.eval()
+                    # Save model, and best model if qualified
+                    delta_acc = self.net_dict.best_acc - eval_loss_mean
+                    if delta_acc > 0:
+                        self.net_dict.best_acc = eval_loss_mean
+                    self.net_dict.save_ckpt(epoch_idx, delta_acc)
 
     def eval(self):
         print('Evaluating...')
