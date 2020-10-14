@@ -57,12 +57,45 @@ timeout = time.time() + 60*15
 
 start_t = time.time()
 # repeat until all markers are found or until time out
+
+start_spin_time = 0
+temp_time_stamp1 = 0
 while len(marker_list) < total_marker_num:
     # ------------------------------------------------------------------------------------
     # TODO: calculate the time the robot needs to spin 360 degrees
     # spin_time = ?
-    # ------------------------------------------------------------------------------------
+    ids = np.array(1)
+    ppi.set_velocity(0, 0, 1)
+    for step in range(int(1000000*fps)):
+        ppi.set_velocity(wheel_vel, -wheel_vel, 1/fps)
+        # get current frame
+        curr = ppi.get_image()
 
+        # visualise ARUCO marker detection annotations
+        aruco_params = aruco.DetectorParameters_create()
+        aruco_params.minDistanceToBorder = 0
+        aruco_params.adaptiveThreshWinSizeMax = 1000
+        aruco_dict = aruco.Dictionary_get(cv2.aruco.DICT_4X4_100)
+
+        corners, ids, rejected = aruco.detectMarkers(curr, aruco_dict, parameters=aruco_params)
+        rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, marker_length, camera_matrix, dist_coeffs)
+
+        aruco.drawDetectedMarkers(curr, corners, ids) # for detected markers show their ids
+        aruco.drawDetectedMarkers(curr, rejected, borderColor=(100, 0, 240)) # unknown squares
+
+        if ids == 11:
+            if start_spin_time == 0:
+                start_spin_time = step/fps
+                temp_time_stamp1 = step
+            ids = 0
+            temp_time_stamp2 = step-temp_time_stamp1
+            if temp_time_stamp2 > 50 and start_spin_time != 0:
+                end_spin_time = step/fps
+                spin_time = end_spin_time-start_spin_time
+                break
+
+    # ------------------------------------------------------------------------------------
+    ppi.set_velocity(0, 0, 1)
     # save all the seen markers and their estimated poses at each step
     measurements = []
     seen_ids = []
