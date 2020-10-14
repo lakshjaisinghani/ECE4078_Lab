@@ -16,7 +16,7 @@ import slam.Slam as Slam
 import slam.Robot as Robot
 import slam.aruco_detector as aruco
 import slam.Measurements as Measurements
-
+import time
 # Manual SLAM
 class Operate:
     def __init__(self, datadir, ppi):
@@ -92,7 +92,7 @@ class Operate:
         # Show SLAM and camera feed side by side
         fig, ax = plt.subplots(1, 2)
         img_artist = ax[1].imshow(self.img)
-
+        starttime = time.time()
         # Main loop
         while True:
             # Run SLAM
@@ -104,7 +104,7 @@ class Operate:
 
             # Output visualisation
             self.display(fig, ax)
-
+            # time.sleep(0.3-((time.time()-starttime)%0.3))
 
 if __name__ == "__main__":
     # Location of the calibration files
