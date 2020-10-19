@@ -65,7 +65,7 @@ while len(marker_list) < total_marker_num:
     # TODO: calculate the time the robot needs to spin 360 degrees
     # spin_time = ?
     ids = np.array(1)
-    ppi.set_velocity(0, 0, 1)
+    ppi.set_velocity(0, 0)
     for step in range(int(1000000*fps)):
         ppi.set_velocity(wheel_vel, -wheel_vel, 1/fps)
         # get current frame
@@ -83,16 +83,19 @@ while len(marker_list) < total_marker_num:
         aruco.drawDetectedMarkers(curr, corners, ids) # for detected markers show their ids
         aruco.drawDetectedMarkers(curr, rejected, borderColor=(100, 0, 240)) # unknown squares
 
-        if ids == 11:
-            if start_spin_time == 0:
-                start_spin_time = step/fps
-                temp_time_stamp1 = step
-            ids = 0
-            temp_time_stamp2 = step-temp_time_stamp1
-            if temp_time_stamp2 > 50 and start_spin_time != 0:
-                end_spin_time = step/fps
-                spin_time = end_spin_time-start_spin_time
-                break
+        try:
+            if ids[0][0] == 11:
+                if start_spin_time == 0:
+                    start_spin_time = step/fps
+                    temp_time_stamp1 = step
+                ids = 0
+                temp_time_stamp2 = step-temp_time_stamp1
+                if temp_time_stamp2 > 50 and start_spin_time != 0:
+                    end_spin_time = step/fps
+                    spin_time = end_spin_time-start_spin_time
+                    break
+        except:
+            pass
 
     # ------------------------------------------------------------------------------------
     ppi.set_velocity(0, 0, 1)

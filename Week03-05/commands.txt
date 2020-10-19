@@ -1,4 +1,4 @@
- source ~/catkin_ws/devel/setup.bash
+source ~/catkin_ws/devel/setup.bash
 roslaunch penguinpi_gazebo penguinpi_arena.launch
 
  cd ECE4078_Lab/Week01-02/
