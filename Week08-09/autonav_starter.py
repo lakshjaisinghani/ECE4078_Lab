@@ -86,8 +86,8 @@ def spin():
         corners, ids, rejected = aruco.detectMarkers(curr, aruco_dict, parameters=aruco_params)
         rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, marker_length, camera_matrix, dist_coeffs)
 
-        aruco.drawDetectedMarkers(curr, corners, ids) # for detected markers show their ids
-        aruco.drawDetectedMarkers(curr, rejected, borderColor=(100, 0, 240)) # unknown squares
+        # aruco.drawDetectedMarkers(curr, corners, ids) # for detected markers show their ids
+        # aruco.drawDetectedMarkers(curr, rejected, borderColor=(100, 0, 240)) # unknown squares
 
         
         # compute a marker's estimated pose and distance to the robot
