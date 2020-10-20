@@ -6,6 +6,18 @@ import cv2.aruco as aruco
 import penguinPiC
 ppi = penguinPiC.PenguinPi()
 
+def get_ids(image):
+    # visualise ARUCO marker detection annotations
+        aruco_params = aruco.DetectorParameters_create()
+        aruco_params.minDistanceToBorder = 0
+        aruco_params.adaptiveThreshWinSizeMax = 1000
+        aruco_dict = aruco.Dictionary_get(cv2.aruco.DICT_4X4_100)
+
+        corners, ids, rejected = aruco.detectMarkers(image, aruco_dict, parameters=aruco_params)
+        rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, marker_length, camera_matrix, dist_coeffs)
+
+        return ids, corners, tvecs
+
 def measure_spin():
     ''' spins the robot until first marker seen is 
         found again.
@@ -21,24 +33,13 @@ def measure_spin():
     while True:
 
         # spinning and looking for markers at each step
-        ppi.set_velocity(-wheel_vel, wheel_vel, 1/fps)
+        ppi.set_velocity(-40, 40, 1/fps)
         ppi.set_velocity(0, 0)
 
         # get current frame
         curr = ppi.get_image()
 
-        # visualise ARUCO marker detection annotations
-        aruco_params = aruco.DetectorParameters_create()
-        aruco_params.minDistanceToBorder = 0
-        aruco_params.adaptiveThreshWinSizeMax = 1000
-        aruco_dict = aruco.Dictionary_get(cv2.aruco.DICT_4X4_100)
-
-        corners, ids, rejected = aruco.detectMarkers(curr, aruco_dict, parameters=aruco_params)
-        rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, marker_length, camera_matrix, dist_coeffs)
-
-        aruco.drawDetectedMarkers(curr, corners, ids) # for detected markers show their ids
-        aruco.drawDetectedMarkers(curr, rejected, borderColor=(100, 0, 240)) # unknown squares
-
+        ids, _ , tvecs = get_ids(curr)
         
         # compute a marker's estimated pose and distance to the robot
         if ids is None:
@@ -75,56 +76,82 @@ def measure_spin():
                 measurements.append(lm_measurement)
 
 def spin_center(marker_id, direction, vel):
+
+    slower_vel = 20
+
     while True:
 
         # rotate in opposite direction
         if not direction:
             vel *= -1 
 
-        ppi.set_velocity(-vel, vel, 1/fps)
+        ppi.set_velocity(vel, -vel, 1/fps)
         ppi.set_velocity(0, 0)
 
         # get current frame
         curr = ppi.get_image()
 
-        # visualise ARUCO marker detection annotations
-        aruco_params = aruco.DetectorParameters_create()
-        aruco_params.minDistanceToBorder = 0
-        aruco_params.adaptiveThreshWinSizeMax = 1000
-        aruco_dict = aruco.Dictionary_get(cv2.aruco.DICT_4X4_100)
+        ids, corners, _ = get_ids(curr)
+        
+        # print(ids)
+        # print(corner)
+        if ids is not None:
+            mark = [marker_id]
+            if mark in ids:
+                indx = list(ids).index([marker_id])
+                corner = corners[indx]
+                centerX = (corner[0][0][0] + corner[0][1][0] + corner[0][2][0] + corner[0][3][0]) / 4
+                # stop if aruco is almost centered
+                if centerX < 290 :
+                    print("less than 290")
+                    ppi.set_velocity(-30, 30, 2/fps)
+                if centerX > 350:
+                    print("more than 350")
+                    ppi.set_velocity(30, -30, 2/fps)
+                if 290 < centerX < 350:
+                    return
 
-        corner, ids, rejected = aruco.detectMarkers(curr, aruco_dict, parameters=aruco_params)
-        rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corner, marker_length, camera_matrix, dist_coeffs)
+def move_forward(marker_id):
+
+    # dist_closest_marker = np.sqrt((marker_list[0][1]-robot_pose[0]) ** 2 + (marker_list[0][2]-robot_pose[1]) ** 2)
+    
+    while True:
+        curr = ppi.get_image()
+
+        ids, corners, _ = get_ids(curr)
 
         if ids is not None:
-            if ids[0][0] == marker_id:
-                centerX = (corner[0][0][0][0] + corner[0][0][1][0] + corner[0][0][2][0] + corner[0][0][3][0]) / 4
-                centerY = (corner[0][0][0][1] + corner[0][0][1][1] + corner[0][0][2][1] + corner[0][0][3][1]) / 4
-                center = (int(centerX), int(centerY))
-                print(center)
+            mark = [marker_id]
+            if mark in ids:
+                indx = list(ids).index([marker_id])
+                corner = corners[indx]
+                centerX = (corner[0][2][0] + corner[0][3][0]) / 2
+                centerY = (corner[0][0][1] + corner[0][1][1] + corner[0][2][1] + corner[0][3][1]) / 4
+                # print("x")
+                # print(centerX)
+                # print("y")
+                # print(centerY)
                 # stop if aruco is almost centered
-                if 280 < centerX < 360:
-                    return 0
-                elif 240 < centerX < 280:
-                    # slightly on left
-                    return -1
-                else if 360 < centerX < 400
-                    # slightly on right
+                if centerX < 290 :
+                    ppi.set_velocity(-30, 30, 1/fps)
+                if centerX > 350:
+                    ppi.set_velocity(30, -0, 1/fps)
+                if 290 < centerX < 350:
+                    ppi.set_velocity(100, 100, 2/fps)
+        else:
+            return
 
-def get_dir(seen_ids, closest_marker_id):
-    # TODO: figure spinning direction
-    return True
 
 if __name__ == "__main__":
     
     # initialize resulting map containing paths between markers
+    been_markers = []
     marker_list = []
     saved_map = []
     map_f = 'map.txt'
     total_marker_num = 6
 
     # drive settings
-    wheel_vel = 40
     fps = 10
 
     # camera calibration parameters (from M2: SLAM)
@@ -151,11 +178,11 @@ if __name__ == "__main__":
         # then stop
         measurements = measure_spin()
         ppi.set_velocity(0, 0)
-        print("measurements done")
         
         # expand the map by going to the nearest marker
         measurements = sorted(measurements, key=lambda x: x[1]) # sort seen markers by distance (closest first)
-        
+        print("measurements done..")
+
         if len(measurements) > 0:
             # add discovered markers to map
             for accessible_marker in measurements:
@@ -176,35 +203,48 @@ if __name__ == "__main__":
             
             # find closest marker and center
             # bot and stop
-            # closest_marker_id = marker_list[0][0]
-            # print(closest_marker_id)
-            # ppi.set_velocity(0, 0)
-            # direction = True
-            # spin_center(closest_marker_id, direction, 30)
-            # ppi.set_velocity(0, 0)
+            closest_marker_id = marker_list[0][0]
+            ppi.set_velocity(0, 0)
+            spin_center(closest_marker_id, direction=True, vel=30)
+            ppi.set_velocity(0, 0)
+            print("succesfully centered")
 
-            break
-        break
-
-        #     #  move forward 
-        #     dist_closest_marker = marker_list[0]
-        #     dist_closest_marker = np.sqrt((marker_list[0][1]-robot_pose[0]) ** 2 + (marker_list[0][2]-robot_pose[1]) ** 2)
-        #     time = dist_closest_marker/wheel_vel - 10
-        #     print(time)
-        #     ppi.set_velocity(wheel_vel, wheel_vel, time)
+            #  move forward 
+            move_forward(closest_marker_id)
             
-        #     # update robot pose
-        #     robot_pose = [measurements[0][2],measurements[0][3]]
-        #     current_marker = measurements[0][0]
+            # update robot pose
+            robot_pose = [measurements[0][2],measurements[0][3]]
+            current_marker = measurements[0][0]
+            been_markers.append(current_marker)
+            print(been_markers)
 
-        #     print('current map [current marker id, accessible marker id, distance]:\n',saved_map)
-        #     print('current marker list [id, x, y]:\n',marker_list)
+            print('current map [current marker id, accessible marker id, distance]:\n',saved_map)
+            print('current marker list [id, x, y]:\n',marker_list)
 
-        # else:
-        #     print('no markers in sight!')
+        else:
+            print('no markers in sight!')
 
-        # # time out after 15 minutes
-        # if time.time() > timeout:
-        #     break
+        # time out after 15 minutes
+        if time.time() > timeout:
+            break
         
+    # show time spent generating the map
+    end_t = time.time()
+    map_t = (end_t - start_t) / 60
+    print('time spent generating the map (in minutes): ',map_t)
 
+    # save results to map.txt
+    # sort marker list by id before printing
+    marker_list = sorted(marker_list, key=lambda x: x[0])
+    with open(map_f,'w') as f:
+        f.write('id, x, y\n')
+        for markers in marker_list:
+            for marker in markers:
+                f.write(str(marker) + ',')
+            f.write('\n')
+        f.write('\ncurrent id, accessible id, distance\n')
+        for routes in saved_map:
+            for route in routes:
+                f.write(str(route) + ',')
+            f.write('\n')
+    print('map saved!')
