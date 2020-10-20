@@ -1,5 +1,5 @@
  source ~/catkin_ws/devel/setup.bash
- roslaunch penguinpi_gazebo penguinpi.launch
+roslaunch penguinpi_gazebo penguinpi_arena.launch
 
  cd ECE4078_Lab/Week01-02/
  python3 test_camera_motors.py
