@@ -33,7 +33,7 @@ def measure_spin():
     while True:
 
         # spinning and looking for markers at each step
-        ppi.set_velocity(-40, 40, 1/fps)
+        ppi.set_velocity(-30, 30, 1/fps)
         ppi.set_velocity(0, 0)
 
         # get current frame
@@ -75,17 +75,11 @@ def measure_spin():
                 lm_measurement = [idi, dist, lm_bff2d[0][0], lm_bff2d[1][0]]
                 measurements.append(lm_measurement)
 
-def spin_center(marker_id, direction, vel):
-
-    slower_vel = 20
+def spin_center(marker_id):
 
     while True:
 
-        # rotate in opposite direction
-        if not direction:
-            vel *= -1 
-
-        ppi.set_velocity(vel, -vel, 1/fps)
+        ppi.set_velocity(20, -20, 1/fps)
         ppi.set_velocity(0, 0)
 
         # get current frame
@@ -93,8 +87,6 @@ def spin_center(marker_id, direction, vel):
 
         ids, corners, _ = get_ids(curr)
         
-        # print(ids)
-        # print(corner)
         if ids is not None:
             mark = [marker_id]
             if mark in ids:
@@ -104,10 +96,10 @@ def spin_center(marker_id, direction, vel):
                 # stop if aruco is almost centered
                 if centerX < 290 :
                     print("less than 290")
-                    ppi.set_velocity(-30, 30, 2/fps)
+                    ppi.set_velocity(-30, 30, 1/fps)
                 if centerX > 350:
                     print("more than 350")
-                    ppi.set_velocity(30, -30, 2/fps)
+                    ppi.set_velocity(30, -30, 1/fps)
                 if 290 < centerX < 350:
                     return
 
@@ -126,18 +118,23 @@ def move_forward(marker_id):
                 indx = list(ids).index([marker_id])
                 corner = corners[indx]
                 centerX = (corner[0][2][0] + corner[0][3][0]) / 2
-                centerY = (corner[0][0][1] + corner[0][1][1] + corner[0][2][1] + corner[0][3][1]) / 4
-                # print("x")
-                # print(centerX)
-                # print("y")
-                # print(centerY)
+                centerY = (corner[0][2][1] + corner[0][3][1]) / 2
+                
+                print("x")
+                print(centerX)
+                print("y")
+                print(centerY)
+
                 # stop if aruco is almost centered
-                if centerX < 290 :
-                    ppi.set_velocity(-30, 30, 1/fps)
-                if centerX > 350:
-                    ppi.set_velocity(30, -0, 1/fps)
-                if 290 < centerX < 350:
-                    ppi.set_velocity(100, 100, 2/fps)
+                if centerY > 50:
+                    if centerX < 290 :
+                        ppi.set_velocity(-30, 30, 1/fps)
+                    if centerX > 350:
+                        ppi.set_velocity(30, -30, 1/fps)
+                    if 290 < centerX < 350:
+                        ppi.set_velocity(90, 90, 1/fps)
+                else:
+                    return
         else:
             return
 
@@ -152,7 +149,7 @@ if __name__ == "__main__":
     total_marker_num = 6
 
     # drive settings
-    fps = 10
+    fps = 5
 
     # camera calibration parameters (from M2: SLAM)
     camera_matrix = np.loadtxt('camera_calibration/intrinsic.txt', delimiter=',')
@@ -199,13 +196,18 @@ if __name__ == "__main__":
                 else:
                     continue
             
-            print(marker_list)
-            
             # find closest marker and center
             # bot and stop
-            closest_marker_id = marker_list[0][0]
+            print(been_markers)
+            for i in range(len(measurements)):
+                if measurements[i][0] not in been_markers:
+                    closest_marker_id = measurements[i][0]
+                    break
+
+            
+            print("closest marker id : " + str(closest_marker_id))
             ppi.set_velocity(0, 0)
-            spin_center(closest_marker_id, direction=True, vel=30)
+            spin_center(closest_marker_id)
             ppi.set_velocity(0, 0)
             print("succesfully centered")
 
@@ -214,9 +216,8 @@ if __name__ == "__main__":
             
             # update robot pose
             robot_pose = [measurements[0][2],measurements[0][3]]
-            current_marker = measurements[0][0]
+            current_marker = closest_marker_id
             been_markers.append(current_marker)
-            print(been_markers)
 
             print('current map [current marker id, accessible marker id, distance]:\n',saved_map)
             print('current marker list [id, x, y]:\n',marker_list)
@@ -228,23 +229,23 @@ if __name__ == "__main__":
         if time.time() > timeout:
             break
         
-    # show time spent generating the map
-    end_t = time.time()
-    map_t = (end_t - start_t) / 60
-    print('time spent generating the map (in minutes): ',map_t)
+    # # show time spent generating the map
+    # end_t = time.time()
+    # map_t = (end_t - start_t) / 60
+    # print('time spent generating the map (in minutes): ',map_t)
 
-    # save results to map.txt
-    # sort marker list by id before printing
-    marker_list = sorted(marker_list, key=lambda x: x[0])
-    with open(map_f,'w') as f:
-        f.write('id, x, y\n')
-        for markers in marker_list:
-            for marker in markers:
-                f.write(str(marker) + ',')
-            f.write('\n')
-        f.write('\ncurrent id, accessible id, distance\n')
-        for routes in saved_map:
-            for route in routes:
-                f.write(str(route) + ',')
-            f.write('\n')
-    print('map saved!')
+    # # save results to map.txt
+    # # sort marker list by id before printing
+    # marker_list = sorted(marker_list, key=lambda x: x[0])
+    # with open(map_f,'w') as f:
+    #     f.write('id, x, y\n')
+    #     for markers in marker_list:
+    #         for marker in markers:
+    #             f.write(str(marker) + ',')
+    #         f.write('\n')
+    #     f.write('\ncurrent id, accessible id, distance\n')
+    #     for routes in saved_map:
+    #         for route in routes:
+    #             f.write(str(route) + ',')
+    #         f.write('\n')
+    # print('map saved!')
