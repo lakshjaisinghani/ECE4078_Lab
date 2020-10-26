@@ -53,16 +53,14 @@ class Operate:
 
         return camera_matrix, dist_coeffs, scale, baseline
 
-    def control(self, lv, rv, t=None):
+    def control(self, lv, rv):
         # Import teleoperation control signals)
-        if t is not None:
-            dt = t - self.startTime
-            drive_meas = Measurements.DriveMeasurement(lv, rv, dt)
-            self.slam.predict(drive_meas)
-            self.ppi.set_velocity(lv, rv, dt)
-        else:
-            self.ppi.set_velocity(lv, rv)
-        
+        dt = time.time() - self.startTime
+
+        drive_meas = Measurements.DriveMeasurement(lv, rv, dt)
+        self.slam.predict(drive_meas)
+        self.ppi.set_velocity(lv, rv, dt)
+    
         self.startTime = time.time()
             
         
@@ -74,8 +72,8 @@ class Operate:
         self.slam.update(lms)
         return lms
 
-    def action(self, lv, rv, t=None):
-        self.control(lv, rv, t)
+    def action(self, lv, rv):
+        self.control(lv, rv)
         _ = self.vision()
         # self.write_map()
 
@@ -91,20 +89,16 @@ class Operate:
         plt.pause(0.01)
 
     def write_map(self):
-        map_f = "map.txt"
-        marker_lst = sorted(self.marker_list, key=lambda x: x[0])
-        with open(map_f,'w') as f:
-            f.write('id, x, y\n')
-            for markers in marker_lst:
-                for marker in markers:
-                    f.write(str(marker) + ',')
-                f.write('\n')
-            f.write('\ncurrent id, accessible id, distance\n')
-            for routes in saved_map:
-                for route in routes:
-                    f.write(str(route) + ',')
-                f.write('\n')
-        print('map saved!')
+        # Output SLAM map as a json file
+        map_dict = {"AR_tag_list":slam.taglist,
+                    "map":slam.markers.tolist(),
+                    "state_x": str(self.pibot.get_state()[0]),
+                    "state_y":str(self.pibot.get_state()[1]), 
+                    "state_z":str(self.pibot.get_state()[2]),
+                    "covariance":slam.P[3:,3:].tolist()
+                    }
+        with open("slam.txt", 'w') as map_f:
+            json.dump(map_dict, map_f, indent=2)
 
     def get_ids(self, image):
     # visualise ARUCO marker detection annotations
@@ -136,11 +130,12 @@ class Operate:
         while spin_flag:
 
             # spinning and looking for markers at each step
-            self.action(-30, 30, time.time())
+            self.action(-30, 30)
 
             theta = self.slam.get_state_vector()[2]
             print("start theta : "+str(start_theta)+",  theta : " + str(theta))
-            
+        
+
             if abs(start_theta - theta) >= 2*math.pi:
                 return measurements
             
@@ -152,7 +147,7 @@ class Operate:
                 x = self.slam.get_state_vector()[0]
                 y = self.slam.get_state_vector()[1]
                 dist =  dist = np.sqrt((x_id-x) ** 2 + (y_id - y) ** 2)
-                measurements.append([lm_measurement[0].tag, dist, x, y])
+                measurements.append([lm_measurement[0].tag, dist, x_id, y_id])
             
     
     def find_target(self, target):
@@ -161,7 +156,7 @@ class Operate:
         self.startTime = time.time()
         while True:
 
-            self.action(-30, 30, time.time())
+            self.action(-30, 30)
 
             # get current frame
             curr = self.ppi.get_image()
@@ -191,9 +186,9 @@ class Operate:
                     
                     # stop if aruco is almost centered
                     if centerX < 280 :
-                        self.action(-30, 30, time.time())
+                        self.action(-30, 30)
                     if centerX > 360:
-                        self.action(-30, 30, time.time())
+                        self.action(-30, 30)
                     if 280 < centerX < 360:
                         return
 
@@ -223,11 +218,11 @@ class Operate:
                     if centerY > 120:
                         # stop if aruco is almost centered
                         if centerX < 280 :
-                            self.action(-30, 30, time.time())
+                            self.action(-30, 30)
                         if centerX > 360:
-                            self.action(30, -30, time.time())
+                            self.action(30, -30)
                         if 280 < centerX < 360:
-                            self.action(90, 90, time.time())
+                            self.action(90, 90)
                     else:
                         return
             else:
@@ -238,9 +233,9 @@ class Operate:
         # Main loop
         while len(self.marker_list) < self.total_maker_num:
             # Run SLAM
-            self.ppi.set_velocity(0, 0, 0.2)
+            self.ppi.set_velocity(0, 0)
             measurements = self.spin_360()
-            self.ppi.set_velocity(0, 0, 0.2)
+            self.ppi.set_velocity(0, 0)
             
             # expand the map by going to the nearest marker
             measurements = sorted(measurements, key=lambda x: x[1]) # sort seen markers by distance (closest first)
