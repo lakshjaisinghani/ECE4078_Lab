@@ -133,6 +133,8 @@ while len(marker_list) < total_marker_num:
     # expand the map by going to the nearest marker
     # TODO: notice that the robot can get stuck always trying to reach the nearest marker, improve the search strategy to improve auto nav
     measurements = sorted(measurements, key=lambda x: x[1]) # sort seen markers by distance (closest first)
+    closestMarker = measurements[0]
+    print("Closest Marker:", closestMarker[0], "\n")
 
     if len(measurements) > 0:
         # add discovered markers to map
