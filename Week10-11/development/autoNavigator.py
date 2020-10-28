@@ -40,6 +40,9 @@ class Operate:
         self.saved_map = []
         self.startTime = 0
 
+        self.fig, self.ax = plt.subplots(1, 2)
+        self.img_artist = self.ax[1].imshow(self.img)
+
     def getCalibParams(self, datadir):
         # Imports camera / wheel calibration parameters
         fileK = "{}camera_calibration/intrinsic.txt".format(datadir)
@@ -75,6 +78,7 @@ class Operate:
     def action(self, lv, rv):
         self.control(lv, rv)
         _ = self.vision()
+        self.display(self.fig, self.ax)
         # self.write_map()
 
     def display(self, fig, ax):
@@ -142,21 +146,30 @@ class Operate:
             # pose estimation
             lm_measurement = self.vision()
             if len(lm_measurement) > 0:
-                x_id = lm_measurement[0].position[0][0]
-                y_id = lm_measurement[0].position[1][0]
-                x = self.slam.get_state_vector()[0]
-                y = self.slam.get_state_vector()[1]
-                dist =  dist = np.sqrt((x_id-x) ** 2 + (y_id - y) ** 2)
-                measurements.append([lm_measurement[0].tag, dist, x_id, y_id])
+                taglist = self.slam.taglist
+                slam_markers = self.slam.markers.tolist()
+
+                for i in range(len(taglist)):
+                    # tag parameters
+                    tag_id = taglist[i]
+                    x_id   = slam_markers[0][i]
+                    y_id   = slam_markers[1][i]
+
+                    # robot parameters
+                    x = self.slam.get_state_vector()[0]
+                    y = self.slam.get_state_vector()[1]
+                    dist =  dist = np.sqrt((x_id-x) ** 2 + (y_id - y) ** 2)
+
+                    measurements.append([tag_id, dist, x_id, y_id])
+                
             
-    
     def find_target(self, target):
         target_id = [target[0]]
         
         self.startTime = time.time()
         while True:
 
-            self.action(-30, 30)
+            self.action(-20, 20)
 
             # get current frame
             curr = self.ppi.get_image()
@@ -183,7 +196,7 @@ class Operate:
                     indx = list(ids).index(target_id)
                     corner = corners[indx]
                     centerX = (corner[0][0][0] + corner[0][1][0] + corner[0][2][0] + corner[0][3][0]) / 4
-                    
+                    print("Centering...")
                     # stop if aruco is almost centered
                     if centerX < 280 :
                         self.action(-30, 30)
@@ -215,14 +228,14 @@ class Operate:
                     print(centerY)
 
                     # stop if aruco is almost centered
-                    if centerY > 120:
+                    if centerY > 130:
                         # stop if aruco is almost centered
                         if centerX < 280 :
                             self.action(-30, 30)
                         if centerX > 360:
                             self.action(30, -30)
                         if 280 < centerX < 360:
-                            self.action(90, 90)
+                            self.action(30, 30)
                     else:
                         return
             else:
@@ -234,6 +247,7 @@ class Operate:
         while len(self.marker_list) < self.total_maker_num:
             # Run SLAM
             self.ppi.set_velocity(0, 0)
+            time.sleep(1)
             measurements = self.spin_360()
             self.ppi.set_velocity(0, 0)
             
@@ -256,21 +270,20 @@ class Operate:
                     else:
                         continue
 
+            target = self.marker_list[-1]
             print(self.marker_list)
-            break
             
-            # target = self.marker_list[-1]
-            # print(self.marker_list)
-            # self.find_target(target)
-            # self.center_target(target)
-            # self.ppi.set_velocity(0, 0, 0.2)
-
-            # # drive towards
-            # self.move_forward(target)
-            # self.ppi.set_velocity(0, 0, 0.2)
+            self.find_target(target)
+            self.center_target(target)
+            self.ppi.set_velocity(0, 0)
+            
+            # drive towards
+            self.move_forward(target)
+            self.ppi.set_velocity(0, 0)
 
 
 if __name__ == "__main__":
+
     # Location of the calibration files
     currentDir = os.getcwd()
     datadir = "{}/calibration/".format(currentDir)
