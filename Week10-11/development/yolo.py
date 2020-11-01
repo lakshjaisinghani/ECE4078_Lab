@@ -79,7 +79,7 @@ class YOLO_v4:
                         cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
 
-    def calculate_relative_locations(self, boxes):
+    def calculate_relative_locations(self, boxes, ClassID):
         # box(top_left_corner_x, top_left_corner_y, box_width, box_height, class)
         if boxes is None:
             return []
@@ -88,9 +88,9 @@ class YOLO_v4:
 
         for i in range(len(boxes)):
             box = boxes[i]
-            if box[4] == 0:
+            if ClassID[i] == 0:
                 true_height = self.sheep_dimensions[2]
-            elif box[4] == 1:
+            elif ClassID[i] == 1:
                 true_height = self.coke_dimensions[2]
             else:
                 print("no class")
@@ -104,6 +104,6 @@ class YOLO_v4:
             horizontal_relative_distance = distance * np.sin(theta)
             vertical_relative_distance = distance * np.cos(theta)
 
-            object.append([box[4], horizontal_relative_distance, vertical_relative_distance])
+            object.append([ClassID[i], horizontal_relative_distance, vertical_relative_distance])
 
         return object
