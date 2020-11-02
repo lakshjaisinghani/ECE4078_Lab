@@ -74,29 +74,24 @@ class Operate:
         self.startTime = time.time()
             
         
-    def vision(self, turn):
+    def vision(self):
         # Import camera input and ARUCO marker info
         self.img = self.ppi.get_image()
         lms, aruco_image = self.aruco_det.detect_marker_positions(self.img)
 
         # TODO: make sexi
-        if self.counter % 5 == 0 and turn:
+        if self.counter % 5 == 0:
             objs = self.yolo.calculate_relative_locations(self.img)
-            
-        elif self.counter % 5 == 0:
-            objs = self.yolo.calculate_relative_locations(self.img)
-
-        self.counter = 0
+            self.counter = 0
+                
         self.slam.add_landmarks(lms, objs)
         self.slam.update(lms, objs)
         return lms
 
     def action(self, lv, rv):
-        turn = 0
+
         self.control(lv, rv)
-        if  lv != rv:
-            turn = 1
-        _ = self.vision(turn)
+        _ = self.vision()
         self.display(self.fig, self.ax)
         # self.write_map()
 
