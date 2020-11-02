@@ -28,6 +28,7 @@ class Operate:
 
         # Keyboard teleoperation components
         self.keyboard = Keyboard.Keyboard(self.ppi)
+        self.startTime = 0
 
         # Get camera / wheel calibration info for SLAM
         camera_matrix, dist_coeffs, scale, baseline = self.getCalibParams(datadir)
@@ -54,10 +55,13 @@ class Operate:
         return camera_matrix, dist_coeffs, scale, baseline
 
     def control(self):
+        dt = time.time() - self.startTime
         # Import teleoperation control signals
         lv, rv = self.keyboard.latest_drive_signal()
-        drive_meas = Measurements.DriveMeasurement(lv, rv, dt=0.3)
+        drive_meas = Measurements.DriveMeasurement(lv, rv, dt)
         self.slam.predict(drive_meas)
+
+        self.startTime = time.time()
 
     def vision(self):
         # Import camera input and ARUCO marker info
@@ -94,6 +98,8 @@ class Operate:
         img_artist = ax[1].imshow(self.img)
         starttime = time.time()
         # Main loop
+        self.startTime = time.time()
+        
         while True:
             # Run SLAM
             self.control()

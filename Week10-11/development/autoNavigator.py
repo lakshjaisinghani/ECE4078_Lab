@@ -35,6 +35,7 @@ class Operate:
         self.marker_list = []
         self.total_maker_num = 8
         self.fps = 5
+        
         # initial location of the robot
         self.current_marker = 'start'
         self.saved_map = []
@@ -123,7 +124,6 @@ class Operate:
         ''' spins the robot until first marker seen is 
             found again.
         '''
-        spin_flag = 1
 
         # save all the seen markers and their estimated poses at each step
         measurements = []
@@ -131,7 +131,7 @@ class Operate:
         start_theta = self.slam.get_state_vector()[2]
         self.startTime = time.time()
 
-        while spin_flag:
+        while True:
 
             # spinning and looking for markers at each step
             self.action(-30, 30)
