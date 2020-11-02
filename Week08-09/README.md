@@ -1,15 +1,7 @@
-# Week 8-9 Instructions
-- [Introduction](#Introduction)
-- [Objectives](#Objectives)
-- [Marking schemes](#Marking-schemes)
-- [Getting-started](#Getting-started)
-    - [Implement a basic auto mapping and navigation (week 8)](#Fill-in-missing-segments-to-implement-a-basic-auto-mapping-and-navigation-week-8)
-    - [Improve performance of auto mapping and navigation (week 9)](#Improve-performance-of-auto-mapping-and-navigation-week-9)
 
-## Introduction
-In M2 you used teleoperation to implement SLAM. The goal of M4 is to implement autonomous mapping and navigation. 
+This is Team 1_04's M4 submission.
 
-You will use the [same testing arena](penguinpi_arena.world) as M2 and M3 (see [Week03-05's instructions](https://github.com/tianleimin/ECE4078_Lab/tree/master/Week03-05#Launch-the-cardboard-arena-world-week-3) for how to launch the testing arena). You will also need [penguinPiC.py](https://github.com/tianleimin/ECE4078_Lab/blob/master/Week01-02/penguinPiC.py), as well as the [wheel calibration](https://github.com/tianleimin/ECE4078_Lab/tree/master/Week03-05/calibration/wheel_calibration) and [camera calibration](https://github.com/tianleimin/ECE4078_Lab/tree/master/Week03-05/calibration/camera_calibration) information for running auto nav.
+We've used a different file rather than autonav_starter.py, so if you want to consider our code please look at navigator.py
 
 The starter code [autonav_starter.py](autonav_starter.py) provides a basic implementation of auto mapping and navigation which follows the steps below:
 
@@ -32,7 +24,7 @@ Your implementation will be executed in a marking arena, which has a different l
 2. Estimated (x,y) pose of markers (16pts): each estimated x OR y of a marker within 1m of the true x OR y +1pts (if multiple estmations are given for the same marker the estimation closest to the true pose will be used for marking)
 3. Number of paths found (24pts): each path found +2pts until reaching the maximum 24pts. *If you simply generate a fully connected graph without having the robot drive in the arena you will lose all 24pts as a penalty.*
 4. Estimated path distance (24pts): each estimated distance of a path less than 1m off the true distance +2pts until reaching the maximum 24pts (if multiple estimations are given for a path's distance the estimation closest to the true distance will be used for marking)
-5. Time spent generating the map (20pts): 0pt if mapping takes 20 minutes or longer; 5pts if mapping takes 15-20 minutes; 10pts if mapping takes 10-15 minutes; 15pts if mapping takes 5-10 minutes; 20pts if mapping takes less than 5 minutes. The task time will be normalized by the Gazebo frame rate as normalized_time = time * framerate / 30. For example, if you use a native Ubuntu with GPU that has a framerate of 90fps, and spend 3 minutes for the task, your normalized time will be 9 minutes; if you use a VM with a framerate of 15fps, and spent 8 minutes for the task, your normalized time will be 4 minutes.
+5. Time spent generating the map (20pts): 0pt if mapping takes 20 minutes or longer; 5pts if mapping takes 15-20 minutes; 10pts if mapping takes 10-15 minutes; 15pts if mapping takes 5-10 minutes; 20pts if mapping takes less than 5 minutes. *If you believe that your implementation is slower due to hardware constraints, please specify this in your readme file when submitting your M4. If your appeal is considered reasonable, we will scale your task time by your Gazebo simulator frame rate as scaled_time = time * framerate / 30. For example, if you use a VM with a Gazebo simulator framerate of 15fps, and spent 8 minutes for the task, your scaled time will be 4 minutes.*
 
 ## Getting-started
 ### Fill in missing segments to implement a basic auto mapping and navigation (week 8)
