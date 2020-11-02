@@ -3,26 +3,29 @@
 ## Introduction
 This is your final assessment of the course, which contributes to 60% of your total score.
 
-Before the live demo in Week 12, you will need to submit a copy of your implementation on Moodle. At the start of your Lab Session you can download your submission, and you will need to unzip it right before your turn to demo. Week 12 Lab Sessions will be recorded by the demonstrators.
+Before 9am on Mon 9 Nov, you will need to submit a copy of your implementation on Moodle. At the start of your demo session you will need to download your submission and unzip it for your demo. After running the live demo you will need to submit the generated map on Moodle during your demo session. If the map hasn't been submitted by the end of your demo session your [performance mark](#Performance-marking-scheme-55pts) will be 0. Final demo will be recorded by the demonstrators.
 
-During the final demo in Week 12, the task is for the robot to roam through an arena, which has a number of ARUCO markers on the walls, as well as sheep figurines and coke cans at different locations of the arena. The robot will need to generate a map of this arena, which gives the (x,y) coordinates of each of the ARUCO markers, sheep figurines, and coke cans it has found. You can either teleoperate the robot or let the robot drive autonomously. Each team has at most 5 minutes to set things up before starting the demo, and can spend at most 10 minutes (simulator world clock) in the arena. If you are confident with the resulting map you can end the demo earlier. While the next group is setting things up the previous group will need to send the resulting map of their demo run to the demonstrator for marking. If the demonstrator haven't received your map by the end of your lab session your [performance mark](#Performance-marking-scheme-55pts) will be 0, and you will only get the [live demo mark](#Live-demo-marking-scheme-25pts) and the [report mark](#Written-report-marking-scheme-20pts).
+During the final demo, the task is for the robot to roam through an arena, which has a number of ARUCO markers on the walls, as well as sheep figurines and coke cans at different locations of the arena. The robot will need to generate a map of this arena, which gives the (x,y) coordinates of each of the ARUCO markers, sheep figurines, and coke cans it has found. You can either teleoperate the robot or let the robot drive autonomously. Each team has at most 5 minutes to set things up before starting the demo, and can spend at most 10 minutes (simulator world clock, roughly equal to 20min real world time) in the arena. If you are confident with the resulting map you can end the demo earlier.
 
-For Lab Session 1 (15 groups) and Lab Session 2 (14 groups) there will be two breakout rooms, each managed by one demonstrator; for Lab Session 3 (5 groups) there will be one room. The groups will demo in random ordering, and if there is a connectivity issue the group can move to demo later. If the connectivity issue can't be resolved during the sesion the demonstrator will run the group's implementation on their machine instead. The group demoing their solutions will share their screen with the rest of the room. The demonstrators will not answer questions related to implementation or performance during the live demo. 
+We will set up 30min slots for final demo. There will be two parallel sessions between 9am-12pm and 1pm-7pm on 9 Nov, each managed by two demonstrators. You can register to demo in one of these slots. If there are unsolvable issues that prevent you from performing the live demo during your assigned slot, a demonstrator will run your submitted implementation on their machine and mark your performance based on the run on their machine.
 
-Final demo will be marked based on your live demo performance and an additional written report. The marking arenas for each lab session will have slight variations, but for all arenas the robot will start from (0,0) and will have at least 2 ARUCO markers in sight at the start. The marking arena world file for each lab session will be released at the start of each lab session in Week 12.
+Final demo will be marked based on your live demo performance and an additional written report. A final demo arena will be provided at 9am on Mon 9 Nov, in which the robot will start from (0,0) and will have at least 2 ARUCO markers in sight at the start.
 
-Within a week of the final demo, you will need to submit a written report reflecting on your implementation. The report should be at most 4 pages long (minimum margin 0.5cm, minimum font 12pt). It should include:
+Before 6pm Fri 13 Nov, you will need to submit a written report reflecting on your implementation. The report should be at most 4 pages long (minimum margin 0.5cm, minimum font 12pt). It should include:
 - A function you implemented that you are most proud of and its design process
 - Functions you implemented that did not work as expected during the demo, why they did not work as expected, and how to fix them in the future
 - Parts of your implementation that can be improved, and how to improve them
 - Additional functions that can be added in the future, either inspired by other groups' demo or by the course contents, and what benefits they may bring
+
+For a video guide of the live demo process please see below:
+[![Live demo process](https://img.youtube.com/vi/N-dMKyidO4k/maxresdefault.jpg)](https://youtu.be/N-dMKyidO4k)
 
 ## Objectives
 Final demo and competition
 
 ## Marking schemes
 ### Bonus point for the top-5 teams (1% bonus mark added to the total course score)
-After the live demos, all teams will be ranked, first by how many targets (ARUCO marker, sheep, coke) were found, then by how accurate the estimated location of the targets are (the average Euclidean distance between estimated location and true location of all targets), finally by how fast they were at mapping the arena (simulator world clock). The top-5 teams will receive a 1% bonus mark added to their total course score.
+After the final demos, all teams will be ranked, first by how many targets (ARUCO marker, sheep, coke) were found, then by how accurate the estimated location of the targets are (the average Euclidean distance between estimated location and true location of all targets), finally by how fast they were at mapping the arena (simulator world clock). The top-5 teams will receive a 1% bonus mark added to their total course score.
 
 ### Live demo marking scheme (25pts)
 - Robot control (15pts at most) 
@@ -67,3 +70,12 @@ After the live demos, all teams will be ranked, first by how many targets (ARUCO
 ## Getting-started
 - Improve on what you've observed in M5
 - the sheep figurine's size is x=0.108, y=0.223, z=0.204; the coke can's size is x= 0.06, y=0.06, z=0.14.
+
+## FAQs
+1. In your implementation and submission, the actual location of the targets retrieved from Gazebo must not be called anywhere. 
+2. You will need to automatically classify targets. Manual object classification (manually entering the correct name of an object to be classified) is not permitted. You CAN manually switch the object detection component on or off (with your neural network model then automatically detecting which object the robot sees and estimating its pose), which counts as partial manual robot control (10pts). You CANNOT manually enter annotations of camera images, such as telling the robot which part of an image is a sheep by manually putting a bounding box around the sheep, or manually capture the current location of the robot as the location of the object that the robot is right next to.
+3. For the same target you can provide at most 3 estimations in the generated map (you can make as many estimations during the run as possible, this is only limiting how many estimations you can print in the map that you submit for marking).
+4. There will be no more than 7 sheep, 7 coke cans, and 15 ARUCO markers in each of the marking map. Thus, you can only provide estimations for no more than 7 sheep, 7 coke cans, and 15 ARUCO markers in the generated map.
+5. No sheep or coke cans will be in the paths between two ARUCO markers in the marking map, similar to [demo_arena_dev_no_collision.world](https://github.com/tianleimin/ECE4078_Lab/blob/master/Week10-11/demo_arena_dev_no_collision.world).
+6. The timer only stops when your map is finalized (post-processing time will be included in your run time as well, such as selecting which 3 estimations to keep for an object).
+7. You cannot get the ARUCO marker IDs from the Gazebo model's name or a pre-defined list of markers.
