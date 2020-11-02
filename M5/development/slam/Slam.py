@@ -14,6 +14,8 @@ class Slam:
         self.robot = robot
         self.markers = np.zeros((2,0))
         self.taglist = []
+        self.sheep = 100
+        self.coke  = 0
 
         # Covariance matrix
         self.P = np.zeros((3,3))
@@ -118,7 +120,42 @@ class Slam:
             self.P[-2,-2] = self.init_lm_cov**2
             self.P[-1,-1] = self.init_lm_cov**2
 
-        
+        for obj in objects:
+            
+            lm_bff = np.array([obj[1], obj[2]]).reshape(2, 1)
+            lm_inertial = robot_xy + R_theta @ lm_bff
+            print(lm_inertial)
+            check_cnt = 0
+
+            ## check confidance interval
+            # x +- 1 | y +- 1
+            for x in range(2):
+                for cords in self.markers[0]:
+                    if lm_inertial[x] - 1 < cords < lm_inertial[x] + 1:
+                        # ignore known tags
+                        check_cnt += 1
+                        continue
+            
+            if check_cnt > 1:
+                # assign class as tag
+                if obj[0] == 0:
+                    tag = self.sheep
+                    self.sheep += 1
+                else:
+                    tag = self.coke
+                    self.coke += 1
+
+                self.taglist.append(int(tag))
+                # add to markers
+                self.markers = np.concatenate((self.markers, lm_inertial), axis=1)
+
+                # Create a simple, large covariance to be fixed by the update step
+                self.P = np.concatenate((self.P, np.zeros((2, self.P.shape[1]))), axis=0)
+                self.P = np.concatenate((self.P, np.zeros((self.P.shape[0], 2))), axis=1)
+                self.P[-2,-2] = self.init_lm_cov**2
+                self.P[-1,-1] = self.init_lm_cov**2
+
+    
 
     # Plotting functions
     # ------------------
