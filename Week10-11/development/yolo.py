@@ -77,7 +77,7 @@ class YOLO_v4:
                         cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
                         text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
                         cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-
+        return boxes, classIDs
 
     def calculate_relative_locations(self, boxes, ClassID):
         # box(top_left_corner_x, top_left_corner_y, box_width, box_height, class)
