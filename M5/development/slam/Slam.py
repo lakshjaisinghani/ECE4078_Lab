@@ -1,6 +1,7 @@
 import numpy as np
 import slam.SlamMap
 import matplotlib.patches as patches
+from Measurements import MarkerMeasurement
 
 class Slam:
     # Implementation of an EKF for SLAM
@@ -46,8 +47,31 @@ class Slam:
         self.robot.drive(raw_drive_meas)
 
 
-    def update(self, measurements):
+    def update(self, measurements, objects):
+        if not measurements and not objects:
+            return
+        if len(measurements) == 0 and len(objects) == 0:
+            return
         if not measurements:
+            measurements = []
+
+        robot_theta = self.robot.state[2]
+        robot_xy = self.robot.state[:2,:]
+        theta_transform =  np.block([[np.cos(robot_theta), -np.sin(robot_theta)], 
+            [np.sin(robot_theta), np.cos(robot_theta)]])
+
+        for obj_label, vert_dist, horiz_dist in objects:
+            lm_relative = np.array([vert_dist, horiz_dist]).reshape((2, 1))
+            lm_absolute = robot_xy + theta_transform @ lm_relative
+            
+            tag = self.find_obj_tag(obj_label, vert_dist, horiz_dist)
+
+            if tag == None:
+                continue
+
+            measurements.append(MarkerMeasurement(lm_relative, tag))
+
+        if len(measurements) == 0:
             return
 
         # Construct measurement index list
@@ -61,14 +85,14 @@ class Slam:
             R[2*i:2*i+2,2*i:2*i+2] = measurements[i].covariance
 
 
-        # TODO: compute own measurements
+        # compute measurements
         z_hat = self.robot.measure(self.markers, idx_list)
         z_hat = z_hat.reshape((-1,1),order="F")
         H = self.robot.derivative_measure(self.markers, idx_list)
 
         x = self.get_state_vector()
         
-         # Kalman Gain
+        # Kalman Gain
         S = H @ self.P @ H.T + R
         K = self.P @ H.T @ np.linalg.inv(S)
         
@@ -93,32 +117,83 @@ class Slam:
         return Q
 
     def add_landmarks(self, measurements, objects):
-        if not measurements:
+        if not measurements and not objects:
             return
 
-        th = self.robot.state[2]
-        robot_xy = self.robot.state[0:2,:]
-        R_theta = np.block([[np.cos(th), -np.sin(th)],[np.sin(th), np.cos(th)]])
+        robot_theta = self.robot.state[2]
+        robot_xy = self.robot.state[:2,:]
+        theta_transform =  np.block([[np.cos(robot_theta), -np.sin(robot_theta)], 
+            [np.sin(robot_theta), np.cos(robot_theta)]])
 
-        # Add new landmarks to the state
-        for lm in measurements:
-            if lm.tag in self.taglist:
-                # ignore known tags
-                continue
-            
-            lm_bff = lm.position
-            lm_inertial = robot_xy + R_theta @ lm_bff
+        if measurements:
+            # Add new landmarks to the state
+            for lm in measurements:
+                if lm.tag in self.taglist:
+                    # ignore known tags
+                    continue
+                
+                lm_relative = lm.position
+                lm_absolute = robot_xy + theta_transform @ lm_relative
 
-            self.taglist.append(int(lm.tag))
-            self.markers = np.concatenate((self.markers, lm_inertial), axis=1)
+                self.taglist.append(int(lm.tag))
+                self.markers = np.concatenate((self.markers, lm_absolute), axis=1)
 
-            # Create a simple, large covariance to be fixed by the update step
-            self.P = np.concatenate((self.P, np.zeros((2, self.P.shape[1]))), axis=0)
-            self.P = np.concatenate((self.P, np.zeros((self.P.shape[0], 2))), axis=1)
-            self.P[-2,-2] = self.init_lm_cov**2
-            self.P[-1,-1] = self.init_lm_cov**2
+                # Create a simple, large covariance to be fixed by the update step
+                self.P = np.concatenate((self.P, np.zeros((2, self.P.shape[1]))), axis=0)
+                self.P = np.concatenate((self.P, np.zeros((self.P.shape[0], 2))), axis=1)
+                self.P[-2,-2] = self.init_lm_cov**2
+                self.P[-1,-1] = self.init_lm_cov**2
+
+        if objects:
+            for obj_label, vert_dist, horiz_dist in objects:
+                lm_relative = np.array([vert_dist, horiz_dist]).reshape((2, 1))
+                lm_absolute = robot_xy + theta_transform @ lm_relative
+
+                if (self.find_obj_tag(obj_label, lm_absolute[0,0], lm_absolute[1,0]) is not None):
+                    # ignore stored tags
+                    continue
+                
+                if obj_label == 0:
+                    # sheep tags will be odd negative int's
+                    if len(self.taglist) == 0:
+                        tag = -1
+                    else:
+                        tag = int(-(abs(max(self.taglist)) * 2 + 1))
+
+                elif obj_label == 1:
+                    # coke tags will be even negative int's
+                    if len(self.taglist) == 0:
+                        tag = -2
+                    else:
+                        tag = int(-(abs(max(self.taglist)) * 2))
+                
+                self.taglist.append(int(tag))
+                self.markers = np.concatenate((self.markers, lm_absolute), axis=1)
+
+                # Create a simple, large covariance to be fixed by the update step
+                self.P = np.concatenate((self.P, np.zeros((2, self.P.shape[1]))), axis=0)
+                self.P = np.concatenate((self.P, np.zeros((self.P.shape[0], 2))), axis=1)
+                self.P[-2, -2] = self.init_lm_cov ** 2
+                self.P[-1, -1] = self.init_lm_cov ** 2
 
         
+
+    def find_obj_tag(self, obj_label, vert_dist, horiz_dist):
+        proximity = 1.8
+
+        for i in range(len(self.taglist)):
+            tag = self.taglist[i]
+
+            if (obj_label == 0 and tag < 0 and tag % 2 != 0) or (obj_label == 1 and tag < 0 and tag % 2 == 0)
+            pos = self.markers[:,i]
+            dist = ((vert_dist - pos[0]) ** 2 + (horiz_dist - pos[1]) ** 2)**0.5
+
+            if dist <= proximity:
+                return tag
+        return None
+
+
+
 
     # Plotting functions
     # ------------------

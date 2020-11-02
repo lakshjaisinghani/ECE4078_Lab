@@ -83,12 +83,12 @@ class Operate:
         if self.counter % 5 == 0 and turn:
             objs = self.yolo.calculate_relative_locations(self.img)
             
-        else if self.counter % 5 == 0:
+        elif self.counter % 5 == 0:
             objs = self.yolo.calculate_relative_locations(self.img)
 
         self.counter = 0
-        self.slam.add_landmarks(objs)
-        self.slam.update(lms)
+        self.slam.add_landmarks(lms, objs)
+        self.slam.update(lms, objs)
         return lms
 
     def action(self, lv, rv):
