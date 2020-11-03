@@ -131,8 +131,12 @@ class Operate:
         s_cnt = 1 
         c_cnt = 1
         # sort marker list by id before printing
-        taglist = list(self.slam.taglast)
-        marker_list = sorted(self.slam.markers, key=lambda x: x[0])
+        try:
+            marker_list = sorted(self.slam.markers, key=lambda x: x[0])
+        except:
+            return
+            
+
         with open(map_f,'w') as f:
             f.write('id, x, y\n')
             for tag in taglist:
@@ -285,6 +289,7 @@ class Operate:
                             self.action(30, 30, "move_forward")
                     else:
                         self.travelled_markers.append(target)
+                        self.current_marker = str(target)
                         return
             else:
                 return
