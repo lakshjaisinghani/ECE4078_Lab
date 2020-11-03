@@ -156,7 +156,9 @@ class Operate:
     # visualise ARUCO marker detection annotations
         aruco_params = cvAruco.DetectorParameters_create()
         aruco_params.minDistanceToBorder = 0
-        aruco_params.adaptiveThreshWinSizeMax = 1000
+        aruco_params.adaptiveThreshWinSizeMax = 500
+        # aruco_params.maxMarkerPerimeterRate = 3
+        aruco_params.polygonalApproxAccuracyRate = 0.7
         aruco_dict = cvAruco.Dictionary_get(cvAruco.DICT_4X4_100)
         marker_length = 0.1
         camera_matrix, dist_coeffs = self.pibot.camera_matrix, self.pibot.camera_dist
