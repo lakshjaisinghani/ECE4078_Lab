@@ -57,6 +57,9 @@ class Slam:
         if not measurements:
             measurements = []
 
+        if objects is None:
+            return
+
         robot_theta = self.robot.state[2]
         robot_xy = self.robot.state[:2,:]
         theta_transform =  np.block([[np.cos(robot_theta), -np.sin(robot_theta)], 
