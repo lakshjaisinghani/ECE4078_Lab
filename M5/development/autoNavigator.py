@@ -76,24 +76,41 @@ class Operate:
         self.startTime = time.time()
             
         
-    def vision(self):
+    def vision(self, use_yolo, counts):
         # Import camera input and ARUCO marker info
         self.img = self.ppi.get_image()
         lms, aruco_image = self.aruco_det.detect_marker_positions(self.img)
+        objs = None
 
-        # TODO: make sexi
-        # if self.counter % 10 == 0:
-        objs = self.yolo.calculate_relative_locations(self.img)
-        self.counter = 0
+        if use_yolo:
+            try:
+                if self.counter % counts == 0:
+                    objs = self.yolo.calculate_relative_locations(self.img)
+                    self.counter = 0
+            except:
+                # counts is zero -> use all the time
+                objs = self.yolo.calculate_relative_locations(self.img)
+
+            self.counter += 1
+
                 
         self.slam.add_landmarks(lms, objs)
         self.slam.update(lms, objs)
         return lms
 
-    def action(self, lv, rv):
+    def action(self, lv, rv, type):
 
         self.control(lv, rv)
-        _ = self.vision()
+
+        if type == "spin_360" or type == "move_forward":
+            if (lv == rv):
+                _ = self.vision(1, 5)
+            else:
+                _ = self.vision(1, 0)
+
+        else:
+            _ = self.vision(0, 0)
+
         self.display(self.fig, self.ax)
         # self.write_map()
 
@@ -149,7 +166,7 @@ class Operate:
         while True:
 
             # spinning and looking for markers at each step
-            self.action(-30, 30)
+            self.action(-30, 30, "spin_360")
 
             theta = self.slam.get_state_vector()[2]
             print("start theta : "+str(start_theta)+",  theta : " + str(theta))
@@ -159,7 +176,7 @@ class Operate:
                 return measurements
             
             # pose estimation
-            lm_measurement = self.vision()
+            lm_measurement = self.vision(0, 0)
             if len(lm_measurement) > 0:
                 taglist = self.slam.taglist
                 slam_markers = self.slam.markers.tolist()
@@ -177,7 +194,7 @@ class Operate:
 
                     measurements.append([tag_id, dist, x_id, y_id])
 
-                    self.seen_markers = list(self.slam.taglist)
+                    self.seen_markers = [s for s in list(self.slam.taglist) if s > 0]
                 
             
     def find_target(self, target):
@@ -185,7 +202,7 @@ class Operate:
         self.startTime = time.time()
         while True:
 
-            self.action(-20, 20)
+            self.action(-20, 20, "find_target")
 
             # get current frame
             curr = self.ppi.get_image()
@@ -213,9 +230,9 @@ class Operate:
                     print("Centering...")
                     # stop if aruco is almost centered
                     if centerX < 280 :
-                        self.action(-30, 30)
+                        self.action(-30, 30, "center_target")
                     if centerX > 360:
-                        self.action(-30, 30)
+                        self.action(-30, 30, "center_target")
                     if 280 < centerX < 360:
                         return
 
@@ -245,11 +262,11 @@ class Operate:
                     if centerY > 130:
                         # stop if aruco is almost centered
                         if centerX < 280 :
-                            self.action(-30, 30)
+                            self.action(-30, 30, " ")
                         if centerX > 360:
-                            self.action(30, -30)
+                            self.action(30, -30, " ")
                         if 280 < centerX < 360:
-                            self.action(30, 30)
+                            self.action(30, 30, "move_forward")
                     else:
                         self.travelled_markers.append(target)
                         return
@@ -319,6 +336,8 @@ class Operate:
             print("Target: " + str(target))
             
             self.find_target(target)
+            self.ppi.set_velocity(0, 0)
+            time.sleep(2)
             self.center_target(target)
             self.ppi.set_velocity(0, 0)
             
