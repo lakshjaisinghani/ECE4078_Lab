@@ -139,21 +139,19 @@ class Operate:
 
         with open(map_f,'w') as f:
             f.write('id, x, y\n')
-            for markers in marker_list:
-                for marker in markers:
-                    if marker <= -100:
-                        f.write('sheep' + str(s_cnt) + ',')
-                        s_cnt += 1
-                    elif marker <= -1:
-                        f.write('coke' + str(c_cnt) + ',')
-                        c_cnt += 1
-                    else:
-                        f.write(str(marker) + ',')
+            for tag in taglist:
+                if taglist[tag] <= -100:
+                    f.write('sheep' + str(s_cnt) + ', ' + str(marker_list[0][tag]) + ', ' + + str(marker_list[1][tag]))
+                    s_cnt += 1
+                elif taglist[tag] <= -1:
+                    f.write('coke' + str(c_cnt) + ', ' + str(marker_list[0][tag]) + ', ' + + str(marker_list[1][tag]))
+                    c_cnt += 1
+                else:
+                    f.write(str(tag) + ', ' + str(marker_list[0][tag]) + ', ' + + str(marker_list[1][tag]))
                 f.write('\n')
             f.write('\ncurrent id, accessible id, distance\n')
             for routes in self.saved_map:
-                for route in routes:
-                    f.write(str(route) + ',')
+                f.write(str(route[0]) + ', ' + str(route[1]) + ', ' + str(route[1]))
                 f.write('\n')
         #print('map saved!')
 
