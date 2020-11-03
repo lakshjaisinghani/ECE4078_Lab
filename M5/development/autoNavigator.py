@@ -114,7 +114,7 @@ class Operate:
         s_cnt = 1 
         c_cnt = 1
         # sort marker list by id before printing
-        marker_list = sorted(self.marker_list, key=lambda x: x[0])
+        marker_list = sorted(self.slam.markers, key=lambda x: x[0])
         with open(map_f,'w') as f:
             f.write('id, x, y\n')
             for markers in marker_list:
