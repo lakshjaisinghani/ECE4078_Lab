@@ -131,27 +131,27 @@ class Operate:
         s_cnt = 1 
         c_cnt = 1
         # sort marker list by id before printing
-        try:
-            marker_list = sorted(self.slam.markers, key=lambda x: x[0])
-        except:
-            return
-        
+
+        marker_list = self.slam.markers
         taglist = list(self.slam.taglist)
 
         with open(map_f,'w') as f:
             f.write('id, x, y\n')
             for tag in taglist:
+                indx  = taglist.index(tag)
+
                 if tag <= -100:
-                    f.write('sheep' + str(s_cnt) + ', ' + str(marker_list[0][tag]) + ', ' + + str(marker_list[1][tag]))
+
+                    f.write('sheep' + str(s_cnt) + ', ' + str(marker_list[0][indx]) + ', ' +  str(marker_list[1][indx]))
                     s_cnt += 1
                 elif tag <= -1:
-                    f.write('coke' + str(c_cnt) + ', ' + str(marker_list[0][tag]) + ', ' + + str(marker_list[1][tag]))
+                    f.write('coke' + str(c_cnt) + ', ' + str(marker_list[0][indx]) + ', ' +  str(marker_list[1][indx]))
                     c_cnt += 1
                 else:
-                    f.write(str(tag) + ', ' + str(marker_list[0][tag]) + ', ' + + str(marker_list[1][tag]))
+                    f.write(str(tag) + ', ' + str(marker_list[0][indx]) + ', ' + str(marker_list[1][indx]))
                 f.write('\n')
             f.write('\ncurrent id, accessible id, distance\n')
-            for routes in self.saved_map:
+            for route in self.saved_map:
                 f.write(str(route[0]) + ', ' + str(route[1]) + ', ' + str(route[1]))
                 f.write('\n')
         #print('map saved!')
