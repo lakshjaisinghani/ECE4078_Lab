@@ -93,7 +93,8 @@ class Operate:
         self.control(lv, rv)
         _ = self.vision()
         self.display(self.fig, self.ax)
-        # self.write_map()
+        # save map
+        self.write_map(self.slam)
 
     def display(self, fig, ax):
         
@@ -107,16 +108,30 @@ class Operate:
         plt.pause(0.01)
 
     def write_map(self):
-        # Output SLAM map as a json file
-        map_dict = {"AR_tag_list":slam.taglist,
-                    "map":slam.markers.tolist(),
-                    "state_x": str(self.pibot.get_state()[0]),
-                    "state_y":str(self.pibot.get_state()[1]), 
-                    "state_z":str(self.pibot.get_state()[2]),
-                    "covariance":slam.P[3:,3:].tolist()
-                    }
-        with open("slam.txt", 'w') as map_f:
-            json.dump(map_dict, map_f, indent=2)
+        map_f = "team_1_04.txt"
+        s_cnt = 1 
+        c_cnt = 1
+        # sort marker list by id before printing
+        marker_list = sorted(self.marker_list, key=lambda x: x[0])
+        with open(map_f,'w') as f:
+            f.write('id, x, y\n')
+            for markers in marker_list:
+                for marker in markers:
+                    if marker <= -100:
+                        f.write('sheep' + str(s_cnt) + ',')
+                        s_cnt += 1
+                    elif marker <= -1:
+                        f.write('coke' + str(c_cnt) + ',')
+                        c_cnt += 1
+                    else:
+                        f.write(str(marker) + ',')
+                f.write('\n')
+            f.write('\ncurrent id, accessible id, distance\n')
+            for routes in self.saved_map:
+                for route in routes:
+                    f.write(str(route) + ',')
+                f.write('\n')
+        print('map saved!')
 
     def get_ids(self, image):
     # visualise ARUCO marker detection annotations
