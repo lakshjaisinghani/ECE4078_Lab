@@ -151,7 +151,7 @@ class Operate:
                     f.write(str(tag) + ', ' + str(marker_list[0][tag]) + ', ' + + str(marker_list[1][tag]))
                 f.write('\n')
             f.write('\ncurrent id, accessible id, distance\n')
-            for routes in self.saved_map:
+            for route in self.saved_map:
                 f.write(str(route[0]) + ', ' + str(route[1]) + ', ' + str(route[1]))
                 f.write('\n')
         #print('map saved!')
@@ -344,7 +344,7 @@ class Operate:
             if len(measurements) > 0:
                 # add discovered markers to map
                 for accessible_marker in measurements:
-                    if self.current_marker != accessible_marker[0]: # avoid adding path to self
+                    if self.current_marker != accessible_marker[0] and accessible_marker[0] > 0: # avoid adding path to self
                         path = []
                         path.append(self.current_marker)
                         path.append(accessible_marker[0])
