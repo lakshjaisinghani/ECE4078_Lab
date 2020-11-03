@@ -94,7 +94,7 @@ class Operate:
         _ = self.vision()
         self.display(self.fig, self.ax)
         # save map
-        self.write_map(self.slam)
+        self.write_map()
 
     def display(self, fig, ax):
         
@@ -131,7 +131,7 @@ class Operate:
                 for route in routes:
                     f.write(str(route) + ',')
                 f.write('\n')
-        print('map saved!')
+        #print('map saved!')
 
     def get_ids(self, image):
     # visualise ARUCO marker detection annotations
