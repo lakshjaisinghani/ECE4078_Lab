@@ -95,7 +95,7 @@ class Operate:
         self.control(lv, rv)
         _ = self.vision()
         self.display(self.fig, self.ax)
-        # save map
+        # write map
         self.write_map()
 
     def display(self, fig, ax):
