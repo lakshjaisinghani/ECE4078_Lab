@@ -136,10 +136,10 @@ class Operate:
         with open(map_f,'w') as f:
             f.write('id, x, y\n')
             for tag in taglist:
-                if taglist[tag] <= -100:
+                if tag <= -100:
                     f.write('sheep' + str(s_cnt) + ', ' + str(marker_list[0][tag]) + ', ' + + str(marker_list[1][tag]))
                     s_cnt += 1
-                elif taglist[tag] <= -1:
+                elif tag <= -1:
                     f.write('coke' + str(c_cnt) + ', ' + str(marker_list[0][tag]) + ', ' + + str(marker_list[1][tag]))
                     c_cnt += 1
                 else:
