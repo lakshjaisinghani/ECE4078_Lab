@@ -135,7 +135,8 @@ class Operate:
             marker_list = sorted(self.slam.markers, key=lambda x: x[0])
         except:
             return
-            
+        
+        taglist = list(self.slam.taglist)
 
         with open(map_f,'w') as f:
             f.write('id, x, y\n')
