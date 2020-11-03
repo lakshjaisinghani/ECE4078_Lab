@@ -36,6 +36,8 @@ class Operate:
 
         # navigator components
         self.marker_list = []
+        self.travelled_markers = []
+        self.seen_markers = []
         self.total_maker_num = 8
         self.fps = 5
         
@@ -80,9 +82,9 @@ class Operate:
         lms, aruco_image = self.aruco_det.detect_marker_positions(self.img)
 
         # TODO: make sexi
-        if self.counter % 5 == 0:
-            objs = self.yolo.calculate_relative_locations(self.img)
-            self.counter = 0
+        # if self.counter % 10 == 0:
+        objs = self.yolo.calculate_relative_locations(self.img)
+        self.counter = 0
                 
         self.slam.add_landmarks(lms, objs)
         self.slam.update(lms, objs)
@@ -189,10 +191,11 @@ class Operate:
                     dist =  dist = np.sqrt((x_id-x) ** 2 + (y_id - y) ** 2)
 
                     measurements.append([tag_id, dist, x_id, y_id])
+
+                    self.seen_markers = list(self.slam.taglist)
                 
             
     def find_target(self, target):
-        target_id = [target[0]]
         
         self.startTime = time.time()
         while True:
@@ -204,12 +207,10 @@ class Operate:
             ids, _, _ = self.get_ids(curr)
             print("searching")
             if ids is not None:
-                if target_id in ids:
+                if target in ids:
                     return
             
     def center_target(self, target):
-
-        target_id = [target[0]]
 
         self.startTime = time.time()
         while True:
@@ -219,9 +220,9 @@ class Operate:
             ids, corners, _ = self.get_ids(curr)
             
             if ids is not None:
-                if target_id in ids:
+                if target in ids:
                     
-                    indx = list(ids).index(target_id)
+                    indx = list(ids).index(target)
                     corner = corners[indx]
                     centerX = (corner[0][0][0] + corner[0][1][0] + corner[0][2][0] + corner[0][3][0]) / 4
                     print("Centering...")
@@ -235,7 +236,7 @@ class Operate:
 
     def move_forward(self, target):
         
-        target_id = [target[0]]
+        target_id = target
 
         self.startTime = time.time()
         while True:
@@ -244,8 +245,8 @@ class Operate:
             ids, corners, _ = self.get_ids(curr)
 
             if ids is not None:
-                if target_id in ids:
-                    indx = list(ids).index(target_id)
+                if target in ids:
+                    indx = list(ids).index(target)
                     corner = corners[indx]
                     centerX = (corner[0][2][0] + corner[0][3][0]) / 2
                     centerY = (corner[0][2][1] + corner[0][3][1]) / 2
@@ -265,14 +266,45 @@ class Operate:
                         if 280 < centerX < 360:
                             self.action(30, 30)
                     else:
+                        self.travelled_markers.append(target)
                         return
             else:
                 return
+    
+    def decide_target(self, current_viewable_ids):
+        
+        doable_ids = []
+        for ids in current_viewable_ids:
+            if ids in self.travelled_markers or ids < 0:
+                continue
+            doable_ids.append(ids)
+
+        distances = []
+        taglist = list(self.slam.taglist)
+
+        for x in doable_ids:
+            indx  = taglist.index(x)
+            tag_pos   = [self.slam.markers[:, indx][0], self.slam.markers[:, indx][1]]
+            curr_pos = [self.slam.get_state_vector()[0][0], self.slam.get_state_vector()[1][0]]
+
+            dist = ((tag_pos[0] - curr_pos[0]) ** 2 + (tag_pos[1] - curr_pos[1]) ** 2)**0.5
+
+            distances.append(dist)
+        
+        # min
+        # dist_to_go = min(distances)
+
+        # max
+        dist_to_go = max(distances)
+
+        target = doable_ids[distances.index(dist_to_go)]
+        return target
 
     def process(self):
 
         # Main loop
-        while len(self.marker_list) < self.total_maker_num:
+        while len(self.seen_markers) < self.total_maker_num:
+            
             # Run SLAM
             self.ppi.set_velocity(0, 0)
             time.sleep(1)
@@ -281,7 +313,10 @@ class Operate:
             
             # expand the map by going to the nearest marker
             measurements = sorted(measurements, key=lambda x: x[1]) # sort seen markers by distance (closest first)
-    
+            current_viewable_ids = [ids for ids, _, _, _ in measurements]
+            current_viewable_ids = list(dict.fromkeys(current_viewable_ids))
+            print(current_viewable_ids)
+
             if len(measurements) > 0:
                 # add discovered markers to map
                 for accessible_marker in measurements:
@@ -291,15 +326,12 @@ class Operate:
                         path.append(accessible_marker[0])
                         path.append(accessible_marker[1])
                         self.saved_map.append(path)
-                        if accessible_marker[0] not in [found[0] for found in self.marker_list]: # avoid adding repeated marker
-                            self.marker_list.append([accessible_marker[0], accessible_marker[2], accessible_marker[3]])
-                        else:
-                            continue 
                     else:
                         continue
 
-            target = self.marker_list[-1]
-            print(self.marker_list)
+            # decide target
+            target = self.decide_target(current_viewable_ids)
+            print("Target: " + str(target))
             
             self.find_target(target)
             self.center_target(target)

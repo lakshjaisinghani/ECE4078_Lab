@@ -108,6 +108,6 @@ class YOLO_v4:
             horizontal_relative_distance = distance * np.sin(theta)
             vertical_relative_distance = distance * np.cos(theta)
 
-            object.append([ClassIDs[i], horizontal_relative_distance, vertical_relative_distance])
+            object.append([ClassIDs[i], vertical_relative_distance, horizontal_relative_distance])
 
         return object

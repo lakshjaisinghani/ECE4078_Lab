@@ -1,7 +1,7 @@
 import numpy as np
 import slam.SlamMap
 import matplotlib.patches as patches
-from Measurements import MarkerMeasurement
+from slam.Measurements import MarkerMeasurement
 
 class Slam:
     # Implementation of an EKF for SLAM
@@ -15,8 +15,8 @@ class Slam:
         self.robot = robot
         self.markers = np.zeros((2,0))
         self.taglist = []
-        self.sheep = 100
-        self.coke  = 0
+        self.sheep = -100
+        self.coke  = -1
 
         # Covariance matrix
         self.P = np.zeros((3,3))
@@ -66,7 +66,7 @@ class Slam:
             lm_relative = np.array([vert_dist, horiz_dist]).reshape((2, 1))
             lm_absolute = robot_xy + theta_transform @ lm_relative
             
-            tag = self.find_obj_tag(obj_label, vert_dist, horiz_dist)
+            tag = self.find_obj_tag(obj_label, lm_absolute[0][0], lm_absolute[1][0])
 
             if tag == None:
                 continue
@@ -157,17 +157,13 @@ class Slam:
                 
                 if obj_label == 0:
                     # sheep tags will be odd negative int's
-                    if len(self.taglist) == 0:
-                        tag = -1
-                    else:
-                        tag = int(-(abs(max(self.taglist)) * 2 + 1))
+                    tag = self.sheep
+                    self.sheep -= 1
 
                 elif obj_label == 1:
                     # coke tags will be even negative int's
-                    if len(self.taglist) == 0:
-                        tag = -2
-                    else:
-                        tag = int(-(abs(max(self.taglist)) * 2))
+                    tag = self.coke
+                    self.coke -= 1
                 
                 self.taglist.append(int(tag))
                 self.markers = np.concatenate((self.markers, lm_absolute), axis=1)
@@ -186,12 +182,12 @@ class Slam:
         for i in range(len(self.taglist)):
             tag = self.taglist[i]
 
-            if (obj_label == 0 and tag < 0 and tag % 2 != 0) or (obj_label == 1 and tag < 0 and tag % 2 == 0)
-            pos = self.markers[:,i]
-            dist = ((vert_dist - pos[0]) ** 2 + (horiz_dist - pos[1]) ** 2)**0.5
+            if (obj_label == 0 and tag <= -100) or (obj_label == 1 and  -100 < tag <= -1):
+                pos = self.markers[:,i]
+                dist = ((vert_dist - pos[0]) ** 2 + (horiz_dist - pos[1]) ** 2)**0.5
 
-            if dist <= proximity:
-                return tag
+                if dist <= proximity:
+                    return tag
         return None
 
     # Plotting functions
