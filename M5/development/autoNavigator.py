@@ -203,9 +203,9 @@ class Operate:
         self.startTime = time.time()
         while True:
             if direction == 0:
-                self.action(-20, 20, "find_target")
+                self.action(-30, 30, "find_target")
             elif direction == 1:
-                self.action(20, -20, "find_target")
+                self.action(30, -30, "find_target")
             # get current frame
             curr = self.ppi.get_image()
             ids, _, _ = self.get_ids(curr)
