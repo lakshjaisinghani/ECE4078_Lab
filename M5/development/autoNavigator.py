@@ -355,12 +355,18 @@ class Operate:
             if len(measurements) > 0:
                 # add discovered markers to map
                 for accessible_marker in measurements:
+                    existing = False
                     if self.current_marker != str(accessible_marker[0]) and accessible_marker[0] > 0: # avoid adding path to self
-                        path = []
-                        path.append(self.current_marker)
-                        path.append(accessible_marker[0])
-                        path.append(accessible_marker[1])
-                        self.saved_map.append(path)
+                        for route in self.saved_map:
+                            if route[0] == self.current_marker and route[1] == accessible_marker[0]:
+                                route[2] = accessible_marker[1]
+                                existing = True
+                        if not existing:
+                            path = []
+                            path.append(self.current_marker)
+                            path.append(accessible_marker[0])
+                            path.append(accessible_marker[1])
+                            self.saved_map.append(path)
                     else:
                         continue
 
