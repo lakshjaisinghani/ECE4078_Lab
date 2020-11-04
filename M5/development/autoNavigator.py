@@ -76,24 +76,11 @@ class Operate:
         self.startTime = time.time()
             
         
-    def vision(self, use_yolo, counts):
+    def vision(self, use_yolo):
         # Import camera input and ARUCO marker info
         self.img = self.ppi.get_image()
         lms, aruco_image = self.aruco_det.detect_marker_positions(self.img)
-        objs = None
-
-        if use_yolo:
-            try:
-                if self.counter % counts == 0:
-                    objs = self.yolo.calculate_relative_locations(self.img)
-                    self.counter = 0
-            except:
-                # counts is zero -> use all the time
-                objs = self.yolo.calculate_relative_locations(self.img)
-
-            self.counter += 1
-
-                
+        objs = self.yolo.calculate_relative_locations(self.img)   
         self.slam.add_landmarks(lms, objs)
         self.slam.update(lms, objs)
         return lms
@@ -102,14 +89,7 @@ class Operate:
 
         self.control(lv, rv)
 
-        if type == "spin_360" or type == "move_forward":
-            if (lv == rv):
-                _ = self.vision(1, 5)
-            else:
-                _ = self.vision(1, 0)
-
-        else:
-            _ = self.vision(0, 0)
+        _ = self.vision(1)
 
         self.display(self.fig, self.ax)
         # write map
@@ -160,9 +140,9 @@ class Operate:
     # visualise ARUCO marker detection annotations
         aruco_params = cvAruco.DetectorParameters_create()
         aruco_params.minDistanceToBorder = 0
-        aruco_params.adaptiveThreshWinSizeMax = 500
+        aruco_params.adaptiveThreshWinSizeMax = 1000
         # aruco_params.maxMarkerPerimeterRate = 3
-        aruco_params.polygonalApproxAccuracyRate = 0.7
+        # aruco_params.polygonalApproxAccuracyRate = 0.7
         aruco_dict = cvAruco.Dictionary_get(cvAruco.DICT_4X4_100)
         marker_length = 0.1
         camera_matrix, dist_coeffs = self.pibot.camera_matrix, self.pibot.camera_dist
@@ -197,7 +177,7 @@ class Operate:
                 return measurements
             
             # pose estimation
-            lm_measurement = self.vision(0, 0)
+            lm_measurement = self.vision(1)
             if len(lm_measurement) > 0:
                 taglist = self.slam.taglist
                 slam_markers = self.slam.markers.tolist()
@@ -218,13 +198,14 @@ class Operate:
                     self.seen_markers = [s for s in list(self.slam.taglist) if s > 0]
                 
             
-    def find_target(self, target):
+    def find_target(self, target, direction):
         
         self.startTime = time.time()
         while True:
-
-            self.action(-20, 20, "find_target")
-
+            if direction == 0:
+                self.action(-20, 20, "find_target")
+            elif direction == 1:
+                self.action(20, -20, "find_target")
             # get current frame
             curr = self.ppi.get_image()
             ids, _, _ = self.get_ids(curr)
@@ -302,27 +283,38 @@ class Operate:
             if ids in self.travelled_markers or ids < 0:
                 continue
             doable_ids.append(ids)
-
         distances = []
         taglist = list(self.slam.taglist)
-
+        spin_direction = []
         for x in doable_ids:
             indx  = taglist.index(x)
             tag_pos   = [self.slam.markers[:, indx][0], self.slam.markers[:, indx][1]]
             curr_pos = [self.slam.get_state_vector()[0][0], self.slam.get_state_vector()[1][0]]
-
+            
             dist = ((tag_pos[0] - curr_pos[0]) ** 2 + (tag_pos[1] - curr_pos[1]) ** 2)**0.5
-
             distances.append(dist)
-        
+
+            tag_theta = tag_theta = np.arctan2(tag_pos[1]-curr_pos[1], tag_pos[0]-curr_pos[0])
+            if tag_theta < 0:
+                tag_theta = tag_theta+2*np.pi
+
+            curr_theta = self.slam.get_state_vector()[2]
+            curr_theta = curr_theta % (2*np.pi)
+            if tag_theta - curr_theta <= np.pi:
+                direction = 0
+            elif tag_theta - curr_theta > np.pi:
+                direction = 1
+
+            spin_direction.append(direction)
         # min
-        # dist_to_go = min(distances)
+        dist_to_go = min(distances)
 
         # max
-        dist_to_go = max(distances)
-
+        # dist_to_go = max(distances)
         target = doable_ids[distances.index(dist_to_go)]
-        return target
+        direction = spin_direction[distances.index(dist_to_go)]
+        print("direction: "+str(direction))
+        return target, direction
 
     def process(self):
 
@@ -354,10 +346,10 @@ class Operate:
                         continue
 
             # decide target
-            target = self.decide_target(current_viewable_ids)
+            target, direction = self.decide_target(current_viewable_ids)
             print("Target: " + str(target))
             
-            self.find_target(target)
+            self.find_target(target, direction)
             self.ppi.set_velocity(0, 0)
             time.sleep(2)
             self.center_target(target)

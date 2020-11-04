@@ -180,7 +180,7 @@ class Slam:
         
 
     def find_obj_tag(self, obj_label, vert_dist, horiz_dist):
-        proximity = 1.8
+        proximity = 2.5
 
         for i in range(len(self.taglist)):
             tag = self.taglist[i]
