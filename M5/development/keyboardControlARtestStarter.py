@@ -18,8 +18,8 @@ class Keyboard:
         self.signal_stop = False 
         
         # feel free to change the speed, or add keys to do so
-        self.wheel_vel_forward = 50
-        self.wheel_vel_rotation = 20
+        self.wheel_vel_forward = 30
+        self.wheel_vel_rotation = 30
 
         # connection to PenguinPi robot
         self.ppi = ppi
@@ -72,12 +72,12 @@ class Keyboard:
             right_speed = -self.wheel_vel_forward
 
         if self.directions[2]:
-            left_speed  -= self.wheel_vel_rotation
-            right_speed += self.wheel_vel_rotation
+            left_speed  = self.wheel_vel_rotation * -1
+            right_speed = self.wheel_vel_rotation
 
         if self.directions[3]:
-            left_speed  += self.wheel_vel_rotation
-            right_speed -= self.wheel_vel_rotation
+            left_speed  = self.wheel_vel_rotation
+            right_speed = self.wheel_vel_rotation * -1
         return left_speed, right_speed
 
     def send_drive_signal(self):
@@ -91,82 +91,82 @@ class Keyboard:
         return self.wheel_vels
     
 
-if __name__ == "__main__":
-    import penguinPiC
-    ppi = penguinPiC.PenguinPi()
+# if __name__ == "__main__":
+#     import penguinPiC
+#     ppi = penguinPiC.PenguinPi()
 
-    keyboard_control = Keyboard(ppi)
+#     keyboard_control = Keyboard(ppi)
 
-    cv2.namedWindow('video', cv2.WINDOW_NORMAL);
-    cv2.setWindowProperty('video', cv2.WND_PROP_AUTOSIZE, cv2.WINDOW_AUTOSIZE);
+#     cv2.namedWindow('video', cv2.WINDOW_NORMAL);
+#     cv2.setWindowProperty('video', cv2.WND_PROP_AUTOSIZE, cv2.WINDOW_AUTOSIZE);
 
-    while True:
-        # font display options
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        location = (0, 0)
-        font_scale = 1
-        font_col_1 = (255, 255, 255)
-        font_col_2 = (0, 0, 255)
-        font_col_3 = (0, 255, 0)
-        font_col_4 = (255, 0, 0)
-        line_type = 2
+#     while True:
+#         # font display options
+#         font = cv2.FONT_HERSHEY_SIMPLEX
+#         location = (0, 0)
+#         font_scale = 1
+#         font_col_1 = (255, 255, 255)
+#         font_col_2 = (0, 0, 255)
+#         font_col_3 = (0, 255, 0)
+#         font_col_4 = (255, 0, 0)
+#         line_type = 2
 
-        # Get velocity of each wheel
-        wheel_vels = keyboard_control.latest_drive_signal()
-        L_Wvel = wheel_vels[0]
-        R_Wvel = wheel_vels[1]
+#         # Get velocity of each wheel
+#         wheel_vels = keyboard_control.latest_drive_signal()
+#         L_Wvel = wheel_vels[0]
+#         R_Wvel = wheel_vels[1]
 
-        # Get current frame
-        curr = ppi.get_image()
+#         # Get current frame
+#         curr = ppi.get_image()
 
-        # Boost flag for display
-        if L_Wvel > 120 or R_Wvel > 120:
-            BOOST_FLAG = "Send mode"
-        else:
-            BOOST_FLAG = "OFF"
+#         # Boost flag for display
+#         if L_Wvel > 120 or R_Wvel > 120:
+#             BOOST_FLAG = "Send mode"
+#         else:
+#             BOOST_FLAG = "OFF"
 
-        # Direction flag for display
-        direction = ''
-        if (L_Wvel == R_Wvel) & ((L_Wvel + R_Wvel) > 0):
-            direction = 'Forward'
-        elif (L_Wvel == R_Wvel) & ((L_Wvel + R_Wvel) < 0):
-            direction = 'Backward'
-        elif L_Wvel < R_Wvel:
-            direction = 'Turn Left'
-        elif L_Wvel > R_Wvel:
-            direction = 'Turn Right'
-        elif L_Wvel == R_Wvel == 0:
-            direction = 'Stop'
+#         # Direction flag for display
+#         direction = ''
+#         if (L_Wvel == R_Wvel) & ((L_Wvel + R_Wvel) > 0):
+#             direction = 'Forward'
+#         elif (L_Wvel == R_Wvel) & ((L_Wvel + R_Wvel) < 0):
+#             direction = 'Backward'
+#         elif L_Wvel < R_Wvel:
+#             direction = 'Turn Left'
+#         elif L_Wvel > R_Wvel:
+#             direction = 'Turn Right'
+#         elif L_Wvel == R_Wvel == 0:
+#             direction = 'Stop'
 
-        # uncomment to see how noises influence the accuracy of ARUCO marker detection
-        #im = np.zeros(np.shape(curr), np.uint8)
-        #cv2.randn(im,(0),(99))
-        #curr = curr + im
+#         # uncomment to see how noises influence the accuracy of ARUCO marker detection
+#         #im = np.zeros(np.shape(curr), np.uint8)
+#         #cv2.randn(im,(0),(99))
+#         #curr = curr + im
         
-        # show ARUCO marker detection annotations
-        aruco_params = aruco.DetectorParameters_create()
-        aruco_params.minDistanceToBorder = 0
-        aruco_params.adaptiveThreshWinSizeMax = 1000
-        aruco_dict = aruco.Dictionary_get(cv2.aruco.DICT_4X4_100)
+#         # show ARUCO marker detection annotations
+#         aruco_params = aruco.DetectorParameters_create()
+#         aruco_params.minDistanceToBorder = 0
+#         aruco_params.adaptiveThreshWinSizeMax = 1000
+#         aruco_dict = aruco.Dictionary_get(cv2.aruco.DICT_4X4_100)
     
-        corners, ids, rejected = aruco.detectMarkers(curr, aruco_dict, parameters=aruco_params)
+#         corners, ids, rejected = aruco.detectMarkers(curr, aruco_dict, parameters=aruco_params)
     
-        aruco.drawDetectedMarkers(curr, corners, ids) # for detected markers show their ids
-        aruco.drawDetectedMarkers(curr, rejected, borderColor=(100, 0, 240)) # unknown squares
+#         aruco.drawDetectedMarkers(curr, corners, ids) # for detected markers show their ids
+#         aruco.drawDetectedMarkers(curr, rejected, borderColor=(100, 0, 240)) # unknown squares
         
-        # Scale to 144p
-        resized = cv2.resize(curr, (960, 720), interpolation = cv2.INTER_AREA)
+#         # Scale to 144p
+#         resized = cv2.resize(curr, (960, 720), interpolation = cv2.INTER_AREA)
 
-        # Replace with your own GUI
-        cv2.putText(resized, 'PenguinPi', (15, 50), font, font_scale, font_col_1, line_type)
-        cv2.putText(resized, 'Direction : ' + direction, (15, 550), font, font_scale, font_col_4, line_type)
-        cv2.putText(resized, 'Wheel Velocity : ' + str((L_Wvel + R_Wvel)/2), (15, 595), font, font_scale, font_col_3, line_type)
-        cv2.putText(resized, 'Left_W: ' + str(L_Wvel), (15, 630), font, 0.75, font_col_3, line_type)
-        cv2.putText(resized, 'Right_W: ' + str(R_Wvel), (15, 660), font, 0.75, font_col_3, line_type)
-        cv2.putText(resized, 'BOOST: ' + str(BOOST_FLAG), (15, 700), font, 1, font_col_2, line_type)
+#         # Replace with your own GUI
+#         cv2.putText(resized, 'PenguinPi', (15, 50), font, font_scale, font_col_1, line_type)
+#         cv2.putText(resized, 'Direction : ' + direction, (15, 550), font, font_scale, font_col_4, line_type)
+#         cv2.putText(resized, 'Wheel Velocity : ' + str((L_Wvel + R_Wvel)/2), (15, 595), font, font_scale, font_col_3, line_type)
+#         cv2.putText(resized, 'Left_W: ' + str(L_Wvel), (15, 630), font, 0.75, font_col_3, line_type)
+#         cv2.putText(resized, 'Right_W: ' + str(R_Wvel), (15, 660), font, 0.75, font_col_3, line_type)
+#         cv2.putText(resized, 'BOOST: ' + str(BOOST_FLAG), (15, 700), font, 1, font_col_2, line_type)
 
-        cv2.imshow('video', resized)
+#         cv2.imshow('video', resized)
 
-        cv2.waitKey(1)
+#         cv2.waitKey(1)
 
-        continue
+#         continue

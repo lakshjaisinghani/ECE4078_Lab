@@ -9,6 +9,7 @@ import cv2.aruco as cvAruco
 # penguin pi components 
 import penguinPiC
 import time
+import keyboardControlARtestStarter as Keyboard
 
 # slam components
 import slam.Slam as Slam
@@ -53,6 +54,8 @@ class Operate:
 
         self.yolo = YOLO_v4("./yolo/yolov4-tiny-custom_2000.weights", "./yolo/yolov4-tiny-custom-1.cfg")
 
+        self.keyboard = Keyboard.Keyboard(self.ppi)
+
     def getCalibParams(self, datadir):
         # Imports camera / wheel calibration parameters
         fileK = "{}camera_calibration/intrinsic.txt".format(datadir)
@@ -87,6 +90,11 @@ class Operate:
         return lms
 
     def action(self, lv, rv, type):
+
+        key_lv, key_rv = self.keyboard.latest_drive_signal()
+
+        if key_lv != 0 and key_rv != 0:
+            self.process_key()
 
         self.control(lv, rv)
 
@@ -324,7 +332,24 @@ class Operate:
         print("direction: "+str(direction))
         return target, direction
 
-    def process(self):
+    def process_key(self):
+        while True:
+
+            key_lv, key_rv = self.keyboard.latest_drive_signal()
+
+            # Run SLAM
+            self.control(key_lv, key_rv)
+            self.vision(0)
+
+            self.display(self.fig, self.ax)
+            # write map
+            self.write_map()
+
+            if key_lv == 0 and key_rv == 0:
+                self.process_auto()
+
+
+    def process_auto(self):
 
         # Main loop
         while len(self.seen_markers) < self.total_maker_num:
@@ -391,4 +416,4 @@ if __name__ == "__main__":
 
     # Perform Manual SLAM
     operate = Operate(datadir, ppi)
-    operate.process()
+    operate.process_auto()

@@ -1,3 +1,0 @@
-id, x, y
-
-current id, accessible id, distance
