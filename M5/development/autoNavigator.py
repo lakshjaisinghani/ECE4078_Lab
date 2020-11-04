@@ -232,7 +232,7 @@ class Operate:
                     print("Centering...")
                     # stop if aruco is almost centered
                     if centerX < 280 :
-                        self.action(-30, 30, "center_target")
+                        self.action(30, -30, "center_target")
                     if centerX > 360:
                         self.action(-30, 30, "center_target")
                     if 280 < centerX < 360:
