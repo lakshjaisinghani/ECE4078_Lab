@@ -336,7 +336,7 @@ class Operate:
             if len(measurements) > 0:
                 # add discovered markers to map
                 for accessible_marker in measurements:
-                    if self.current_marker != accessible_marker[0]: # avoid adding path to self
+                    if self.current_marker != accessible_marker[0] and accessible_marker[0] > 0: # avoid adding path to self
                         path = []
                         path.append(self.current_marker)
                         path.append(accessible_marker[0])
