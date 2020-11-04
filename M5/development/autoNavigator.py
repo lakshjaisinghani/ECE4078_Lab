@@ -8,7 +8,6 @@ import cv2.aruco as cvAruco
 
 # penguin pi components 
 import penguinPiC
-# import keyboardControlARtestStarter as Keyboard
 import time
 
 # slam components
@@ -54,8 +53,6 @@ class Operate:
 
         self.yolo = YOLO_v4("./yolo/yolov4-tiny-custom_2000.weights", "./yolo/yolov4-tiny-custom-1.cfg")
 
-        # self.keyboard = Keyboard.Keyboard(self.ppi)
-
     def getCalibParams(self, datadir):
         # Imports camera / wheel calibration parameters
         fileK = "{}camera_calibration/intrinsic.txt".format(datadir)
@@ -73,16 +70,9 @@ class Operate:
         # Import teleoperation control signals)
         dt = time.time() - self.startTime
 
-        # key_lv, key_rv = self.keyboard.latest_drive_signal()
-
-        # if key_lv == 0 and key_rv == 0:
         drive_meas = Measurements.DriveMeasurement(lv, rv, dt)
         self.slam.predict(drive_meas)
         self.ppi.set_velocity(lv, rv, dt)
-        # else:
-        #     drive_meas = Measurements.DriveMeasurement(key_lv, key_rv, dt)
-        #     self.slam.predict(drive_meas)
-        #     self.ppi.set_velocity(key_lv, key_rv, dt)
 
         self.startTime = time.time()
             
@@ -226,7 +216,7 @@ class Operate:
             
             theta = self.slam.get_state_vector()[2]
             if abs(theta_s - theta) >= 2*np.pi:
-                return 0
+                return None
 
             if ids is not None:
                 if target in ids:
@@ -338,7 +328,6 @@ class Operate:
 
         # Main loop
         while len(self.seen_markers) < self.total_maker_num:
-            print(self.seen_markers)
             
             # Run SLAM
             self.ppi.set_velocity(0, 0)
@@ -348,6 +337,7 @@ class Operate:
             
             # expand the map by going to the nearest marker
             measurements = sorted(measurements, key=lambda x: x[1]) # sort seen markers by distance (closest first)
+            print(measurements)
             current_viewable_ids = [ids for ids, _, _, _ in measurements]
             current_viewable_ids = list(dict.fromkeys(current_viewable_ids))
             print(current_viewable_ids)
@@ -377,6 +367,9 @@ class Operate:
                 target, direction = self.decide_target(current_viewable_ids)
                 print("Target: " + str(target))
                 found = self.find_target(target, direction)
+
+                if found is None:
+                    current_viewable_ids.remove(target)
 
             self.ppi.set_velocity(0, 0)
             time.sleep(2)

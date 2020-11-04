@@ -112,7 +112,7 @@ if __name__ == "__main__":
         line_type = 2
 
         # Get velocity of each wheel
-        wheel_vels = keyboard_control.latest_drive_signal();
+        wheel_vels = keyboard_control.latest_drive_signal()
         L_Wvel = wheel_vels[0]
         R_Wvel = wheel_vels[1]
 
