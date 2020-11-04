@@ -132,7 +132,7 @@ class Operate:
                 f.write('\n')
             f.write('\ncurrent id, accessible id, distance\n')
             for route in self.saved_map:
-                f.write(str(route[0]) + ', ' + str(route[1]) + ', ' + str(route[1]))
+                f.write(str(route[0]) + ', ' + str(route[1]) + ', ' + str(route[2][0]))
                 f.write('\n')
         #print('map saved!')
 
@@ -232,9 +232,9 @@ class Operate:
                     print("Centering...")
                     # stop if aruco is almost centered
                     if centerX < 280 :
-                        self.action(30, -30, "center_target")
-                    if centerX > 360:
                         self.action(-30, 30, "center_target")
+                    if centerX > 360:
+                        self.action(30, -30, "center_target")
                     if 280 < centerX < 360:
                         return
 
@@ -336,7 +336,7 @@ class Operate:
             if len(measurements) > 0:
                 # add discovered markers to map
                 for accessible_marker in measurements:
-                    if self.current_marker != accessible_marker[0] and accessible_marker[0] > 0: # avoid adding path to self
+                    if self.current_marker != str(accessible_marker[0]) and accessible_marker[0] > 0: # avoid adding path to self
                         path = []
                         path.append(self.current_marker)
                         path.append(accessible_marker[0])
