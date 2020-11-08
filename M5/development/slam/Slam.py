@@ -185,7 +185,7 @@ class Slam:
         for i in range(len(self.taglist)):
             tag = self.taglist[i]
 
-            if (obj_label == 0 and tag <= -100) or (obj_label == 1 and  -100 < tag <= -1):
+            if tag < 0:
                 pos = self.markers[:,i]
                 dist = ((vert_dist - pos[0]) ** 2 + (horiz_dist - pos[1]) ** 2)**0.5
 

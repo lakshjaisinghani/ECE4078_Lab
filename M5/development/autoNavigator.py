@@ -80,7 +80,7 @@ class Operate:
         self.startTime = time.time()
             
         
-    def vision(self, use_yolo):
+    def vision(self):
         # Import camera input and ARUCO marker info
         self.img = self.ppi.get_image()
         lms, aruco_image = self.aruco_det.detect_marker_positions(self.img)
@@ -98,7 +98,7 @@ class Operate:
 
         self.control(lv, rv)
 
-        _ = self.vision(1)
+        _ = self.vision()
 
         self.display(self.fig, self.ax)
         # write map
@@ -186,7 +186,7 @@ class Operate:
                 return measurements
             
             # pose estimation
-            lm_measurement = self.vision(1)
+            lm_measurement = self.vision()
             if len(lm_measurement) > 0:
                 taglist = self.slam.taglist
                 slam_markers = self.slam.markers.tolist()
@@ -339,7 +339,7 @@ class Operate:
 
             # Run SLAM
             self.control(key_lv, key_rv)
-            self.vision(0)
+            self.vision()
 
             self.display(self.fig, self.ax)
             # write map
