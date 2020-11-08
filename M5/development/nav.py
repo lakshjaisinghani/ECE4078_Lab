@@ -8,8 +8,8 @@ import cv2.aruco as cvAruco
 
 # penguin pi components 
 import penguinPiC
-import time
 import keyboardControlARtestStarter as Keyboard
+import time
 
 # slam components
 import slam.Slam as Slam
@@ -54,6 +54,7 @@ class Operate:
 
         self.yolo = YOLO_v4("./yolo/yolov4-tiny-custom_2000.weights", "./yolo/yolov4-tiny-custom-1.cfg")
 
+        # Keyboard teleoperation components
         self.keyboard = Keyboard.Keyboard(self.ppi)
 
     def getCalibParams(self, datadir):
@@ -80,7 +81,7 @@ class Operate:
         self.startTime = time.time()
             
         
-    def vision(self):
+    def vision(self, use_yolo):
         # Import camera input and ARUCO marker info
         self.img = self.ppi.get_image()
         lms, aruco_image = self.aruco_det.detect_marker_positions(self.img)
@@ -91,14 +92,9 @@ class Operate:
 
     def action(self, lv, rv, type):
 
-        # key_lv, key_rv = self.keyboard.latest_drive_signal()
-
-        # if key_lv != 0 and key_rv != 0:
-        #     self.process_key()
-
         self.control(lv, rv)
 
-        _ = self.vision()
+        _ = self.vision(1)
 
         self.display(self.fig, self.ax)
         # write map
@@ -185,7 +181,7 @@ class Operate:
                 return measurements
             
             # pose estimation
-            lm_measurement = self.vision()
+            lm_measurement = self.vision(1)
             if len(lm_measurement) > 0:
                 taglist = self.slam.taglist
                 slam_markers = self.slam.markers.tolist()
@@ -204,7 +200,8 @@ class Operate:
                     measurements.append([tag_id, dist, x_id, y_id])
 
                     self.seen_markers = [s for s in list(self.slam.taglist) if s > 0]
-                        
+                
+            
     def find_target(self, target, direction):
         
         self.startTime = time.time()
@@ -331,24 +328,7 @@ class Operate:
         print("direction: "+str(direction))
         return target, direction
 
-    def process_key(self):
-        while True:
-
-            # key_lv, key_rv = self.keyboard.latest_drive_signal()
-
-            # Run SLAM
-            self.control(key_lv, key_rv)
-            self.vision()
-
-            self.display(self.fig, self.ax)
-            # write map
-            self.write_map()
-
-            # if key_lv == 0 and key_rv == 0:
-            #     self.process_auto()
-
-
-    def process_auto(self):
+    def process(self):
 
         # Main loop
         while len(self.seen_markers) < self.total_maker_num:
@@ -404,6 +384,25 @@ class Operate:
             self.move_forward(target)
             self.ppi.set_velocity(0, 0)
 
+    def process_keyboard(self):
+
+        # Main loop
+        self.startTime = time.time()
+        
+        while True:
+            lv, rv = self.keyboard.latest_drive_signal()
+
+            # Run SLAM
+            self.control(lv, rv)
+            _ = self.vision(1)
+
+            self.display(self.fig, self.ax)
+
+            # write map
+            self.write_map()
+            # time.sleep(0.3-((time.time()-starttime)%0.3))
+
+
 
 if __name__ == "__main__":
 
@@ -415,4 +414,5 @@ if __name__ == "__main__":
 
     # Perform Manual SLAM
     operate = Operate(datadir, ppi)
-    operate.process_auto()
+
+    operate.process_keyboard()
